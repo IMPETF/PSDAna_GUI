@@ -1,0 +1,393 @@
+/////////////////////////////////////////////////////////
+// File name: TH_init.cpp                              //
+// Brief introduction:                                 //
+//       This class create the main frame for          //
+//       gui program of Process Files                  //
+//                                                     //
+// Version: V1.1                                       //
+// Author: liu longxiang                               //
+// Date: Nov. 2013                                     //
+// Mail: liulongxiang@impcas.ac.cn                     //
+/////////////////////////////////////////////////////////
+//#include <stdio.h>
+//#include <string.h>
+//#include "GuiFrame.h"
+
+const int ED_xChan_minNo=0;
+const int ED_xChan_maxNo=30000;
+const int ED_nBin_No=30000;
+const int ED_weight=0;
+void TH_init()
+{
+
+  // ----------------------- Begin Definition Histogram ----------------------
+  //char title[90][200];
+//  TString FEE_Telemetry_Current[8]={"I1_FEE1_PX","I2_FEE1_PX","I3_FEE3_PY","I4_FEE3_PY",
+//  	                                "I5_FEE2_NX","I6_FEE2_NX","I7_FEE4_NY","I8_FEE4_NY"};
+  TString FEE_Telemetry_Current[4]={"I1_mA(-2.5V)","I2_mA(-2.5V)","I3_mA(-2.5V)","I4_mA(-2.5V)"};
+  TString Temperature[16]={"T1_FEE1_VA160", "T2_FEE1_PowerChip", "T3_PX_Base1", "T4_PX_Base2",
+  	                       "T5_FEE2_VA160", "T6_FEE2_PowerChip", "T7_NX_Base1", "T8_NX_Base2",
+  	                       "T9_FEE3_VA160", "T10_FEE3_PowerChip","T11_PY_Base1","T12_PY_Base2",
+  	                       "T13_FEE4_VA160","T14_FEE4_PowerChip","T15_NY_Base1","T16_NY_Base2"};  
+  TString htitletmp,hnametmp;
+  //char hname[200];
+  // -------------- Map 1-D Histgrams for raw data --------------------
+
+ for(int i=0;i<4;i++)
+ {
+	  htitletmp=FEE_Telemetry_Current[i]; 	  
+	  hnametmp=Form("FEE_I_%d", i+1);                 
+//     HBOOK1(hnametmp.Data(),htitletmp.Data(),30000,0.,30000.,0.);
+     HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);     
+ } 
+   
+
+ 
+ for(int i=0;i<16;i++)
+ {
+	  htitletmp=Temperature[i];  	  
+	  hnametmp=Form("T_%d", i+1);                 
+//    HBOOK1(hnametmp.Data(),htitletmp.Data(),4000,0.,4000.,0.); 	  
+    HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);  
+ }
+ 
+ // FPGA Status Prameters
+ 
+ TString Reg0[4]={"FEE1_ID","FEE2_ID","FEE3_ID","FEE4_ID"};
+
+for(int i=0;i<1;i++)//status_reg[0]
+ {
+ 	  for(int j=0;j<4;j++)
+ 	  {
+	    htitletmp=Reg0[j];    	    
+	    hnametmp=Form("FPGA_%d_%d", i+1,j+1);               
+ //     HBOOK1(hnametmp.Data(),htitletmp.Data(),4000,0.,4000.,0.); 	 	  	
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);  
+ 	  	//TString sd=Form("FPGA_%d_%d", i+1,j+1);
+      //HBOOK1(sd.Data(),sd.Data(),4000,0.,4000.,0.);  	  	
+ 	  }
+ }
+
+ TString Reg1[4][6]={"FEE1_TSig_RXEN","FEE1_OperationMode","FEE1_DataOutputMode","FEE1_TSig_SEL","FEE1_Power_Status","FEE1_Power_ENA",
+ 	                   "FEE2_TSig_RXEN","FEE2_OperationMode","FEE2_DataOutputMode","FEE2_TSig_SEL","FEE2_Power_Status","FEE2_Power_ENA",
+ 	                   "FEE3_TSig_RXEN","FEE3_OperationMode","FEE3_DataOutputMode","FEE3_TSig_SEL","FEE3_Power_Status","FEE3_Power_ENA",
+ 	                   "FEE4_TSig_RXEN","FEE4_OperationMode","FEE4_DataOutputMode","FEE4_TSig_SEL","FEE4_Power_Status","FEE4_Power_ENA"};
+  
+for(int i=1;i<2;i++)//status_reg[1]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	for (int k=0;k<6;k++)
+ 	  	{
+	      htitletmp=Reg1[j][k];  	  		
+ 	  	  hnametmp=Form("FPGA_%d_%d_%d", i+1,j+1,k+1);
+        HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);   
+      }                     	  	
+ 	  }
+ } 
+
+TString Reg2[4]={"FEE1_PeakDelay","FEE2_PeakDelay","FEE3_PeakDelay","FEE4_PeakDelay"};
+for(int i=2;i<3;i++)//status_reg[2]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg2[j];
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg3_4[2][4]={"FEE1_TriStatus","FEE2_TriStatus","FEE3_TriStatus","FEE4_TriStatus",
+	                  "FEE1_TriNo","FEE2_TriNo","FEE3_TriNo","FEE4_TriNo"};
+	                  
+for(int i=3;i<5;i++)//status_reg[3] and status_reg[4]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg3_4[i-3][j];
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ } 
+
+TString Reg5_6[2][4]={"FEE1_Count_I_off","FEE2_Count_I_off","FEE3_Count_I_off","FEE4_Count_I_off",
+	                  "FEE1_I_mA(-2.5V)","FEE2_I_mA(-2.5V)","FEE3_I_mA(-2.5V)","FEE4_I_mA(-2.5V)"};
+for(int i=5;i<7;i++)//status_reg[5] and status_reg[6]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg5_6[i-5][j]; 	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg7[4][2]={"FEE1_CMD_Response_Counter","FEE1_DM_CMD_IN_Counter_LB4","FEE2_CMD_Response_Counter","FEE2_DM_CMD_IN_Counter_LB4",
+	                  "FEE3_CMD_Response_Counter","FEE3_DM_CMD_IN_Counter_LB4","FEE4_CMD_Response_Counter","FEE4_DM_CMD_IN_Counter_LB4"}; 
+for(int i=7;i<8;i++)//status_reg[7]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+        for (int k=0;k<2;k++)
+ 	  	{
+ 	  	  htitletmp=Reg7[j][k];  	  		
+ 	  	  hnametmp=Form("FPGA_%d_%d_%d", i+1,j+1,k+1);
+        HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+      }
+ 	  }
+ }
+
+TString Reg8_9[4]={"FEE1_DM_CMD_IN_Counter","FEE2_DM_CMD_IN_Counter","FEE3_DM_CMD_IN_Counter","FEE4_DM_CMD_IN_Counter"}; 
+for(int i=8;i<9;i++)//status_reg[8] and status_reg[9]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg8_9[j];
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg10_11[4]={"FEE1_FEE_CMD_Response_Counter","FEE2_FEE_CMD_Response_Counter","FEE3_FEE_CMD_Response_Counter","FEE4_FEE_CMD_Response_Counter"};  
+for(int i=10;i<11;i++)//status_reg[10] and status_reg[11]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg10_11[j]; 	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg12_13[4]={"FEE1_Th_power_off","FEE2_Th_power_off","FEE3_Th_power_off","FEE4_Th_power_off"}; 
+for(int i=12;i<13;i++)//status_reg[12] and status_reg[13]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg12_13[j]; 	  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg14_15[4]={"FEE1_Count_power_off","FEE2_Count_power_off","FEE3_Count_power_off","FEE4_Count_power_off"};
+for(int i=14;i<15;i++)//status_reg[14] and status_reg[15]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg14_15[j];  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }  
+
+TString Reg16[4]={"FEE1_CMD_chan","FEE2_CMD_chan","FEE3_CMD_chan","FEE4_CMD_chan"}; 
+for(int i=16;i<17;i++)//status_reg[16]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg16[j];  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+ 
+TString Reg17_18[4]={"FEE1_DM_IN_CMD_odd_erro_Counter","FEE2_DM_IN_CMD_odd_erro_Counter",
+	                   "FEE3_DM_IN_CMD_odd_erro_Counter","FEE4_DM_IN_CMD_odd_erro_Counter"}; 
+for(int i=17;i<18;i++)//status_reg[17] and status_reg[18]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg17_18[j]; 	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }        
+
+TString Reg19_20[4]={"FEE1_DM_IN_CMD_cusum_erro_Counter","FEE2_DM_IN_CMD_cusum_erro_Counter",
+	                   "FEE3_DM_IN_CMD_cusum_erro_Counter","FEE4_DM_IN_CMD_cusum_erro_Counter"};
+for(int i=19;i<20;i++)//status_reg[19] and status_reg[20]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg19_20[j];  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg21_22[4]={"FEE1_DM_IN_CMD_ignore_erro_Counter","FEE2_DM_IN_CMD_ignore_erro_Counter",
+	                  "FEE3_DM_IN_CMD_ignore_erro_Counter","FEE4_DM_IN_CMD_ignore_erro_Counter"};
+for(int i=21;i<22;i++)//status_reg[21] and status_reg[22]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg21_22[j];  	 	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg23[4]={"FEE1_HTh_CRC_erro_counter","FEE2_HTh_CRC_erro_counter",
+	                   "FEE3_HTh_CRC_erro_counter","FEE4_HTh_CRC_erro_counter"}; 
+for(int i=23;i<24;i++)//status_reg[23]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg23[j];  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+  
+TString Reg24[4]={"FEE1_LTh_CRC_erro_counter","FEE2_LTh_CRC_erro_counter",
+	                "FEE3_LTh_CRC_erro_counter","FEE4_LTh_CRC_erro_counter"};   
+for(int i=24;i<25;i++)//status_reg[24]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg24[j];   	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }                
+
+TString Reg25_26[4]={"FEE1_Scie_Data_TO","FEE2_Scie_Data_TO","FEE3_Scie_Data_TO","FEE4_Scie_Data_TO"};  
+for(int i=25;i<26;i++)//status_reg[25] and status_reg[26]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg25_26[j];  	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }                
+
+TString Reg27_28[4]={"FEE1_Scie_Data_TO_counter","FEE2_Scie_Data_TO_counter",
+	                   "FEE3_Scie_Data_TO_counter","FEE4_Scie_Data_TO_counter"};      
+for(int i=27;i<28;i++)//status_reg[27] and status_reg[28]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg27_28[j];  	 	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }
+
+TString Reg29_30[4]={"FEE1_TriWidth_erro_counter","FEE2_TriWidth_erro_counter",
+	                   "FEE3_TriWidth_erro_counter","FEE4_TriWidth_erro_counter"}; 
+for(int i=29;i<30;i++)//status_reg[29] and status_reg[30]
+ {
+      for(int j=0;j<4;j++)
+ 	  {
+ 	  	htitletmp=Reg29_30[j];   	  	
+ 	  	hnametmp=Form("FPGA_%d_%d", i+1,j+1);
+      HBOOK1(hnametmp.Data(),htitletmp.Data(),ED_nBin_No,ED_xChan_minNo,ED_xChan_maxNo,ED_weight);    	  	
+ 	  }
+ }                
+ // FPGA Status Prameters
+ 
+/*
+// Histogram
+TString hname_PX[90]={"PSD_X1_P_Dy8",  "PSD_X2_P_Dy8",  "PSD_X_P_VA1_1", "PSD_X3_P_Dy8",  "PSD_X4_P_Dy8",   "PSD_X5_P_Dy8",
+                      "PSD_X6_P_Dy8",  "PSD_X7_P_Dy8",  "PSD_X8_P_Dy8",  "PSD_X9_P_Dy8",  "PSD_X10_P_Dy8",  "PSD_X11_P_Dy8",
+                      "PSD_X12_P_Dy8", "PSD_X13_P_Dy8", "PSD_X14_P_Dy8", "PSD_X15_P_Dy8", "PSD_X16_P_Dy8",  "PSD_X17_P_Dy8",
+                      "PSD_X18_P_Dy8", "PSD_X19_P_Dy8", "PSD_X20_P_Dy8", "PSD_X_P_VA1_2", "PSD_X21_P_Dy8",  "PSD_X1_P_Dy5",
+                      "PSD_X2_P_Dy5",  "PSD_X_P_VA2_1", "PSD_X3_P_Dy5",  "PSD_X4_P_Dy5",  "PSD_X5_P_Dy5",   "PSD_X6_P_Dy5", 
+                      "PSD_X7_P_Dy5",  "PSD_X8_P_Dy5",  "PSD_X9_P_Dy5",  "PSD_X10_P_Dy5", "PSD_X11_P_Dy5",  "PSD_X12_P_Dy5",
+                      "PSD_X13_P_Dy5", "PSD_X14_P_Dy5", "PSD_X15_P_Dy5", "PSD_X16_P_Dy5", "PSD_X17_P_Dy5",  "PSD_X18_P_Dy5",
+                      "PSD_X19_P_Dy5", "PSD_X20_P_Dy5", "PSD_X_P_VA2_2", "PSD_X21_P_Dy5", "PSD_X22_P_Dy8",  "PSD_X23_P_Dy8",
+                      "PSD_X_P_VA3_1", "PSD_X24_P_Dy8", "PSD_X25_P_Dy8", "PSD_X26_P_Dy8", "PSD_X27_P_Dy8",  "PSD_X28_P_Dy8",
+                      "PSD_X29_P_Dy8", "PSD_X30_P_Dy8", "PSD_X31_P_Dy8", "PSD_X32_P_Dy8", "PSD_X33_P_Dy8",  "PSD_X34_P_Dy8",
+                      "PSD_X35_P_Dy8", "PSD_X36_P_Dy8", "PSD_X37_P_Dy8", "PSD_X38_P_Dy8", "PSD_X39_P_Dy8",  "PSD_X40_P_Dy8",
+                      "PSD_X41_P_Dy8", "PSD_X_P_VA3_2", "PSD_X22_P_Dy5", "PSD_X23_P_Dy5", "PSD_X_P_VA4_1",  "PSD_X24_P_Dy5",
+                      "PSD_X25_P_Dy5", "PSD_X26_P_Dy5", "PSD_X27_P_Dy5", "PSD_X28_P_Dy5", "PSD_X29_P_Dy5",  "PSD_X30_P_Dy5",
+                      "PSD_X31_P_Dy5", "PSD_X32_P_Dy5", "PSD_X33_P_Dy5", "PSD_X34_P_Dy5", "PSD_X35_P_Dy5",  "PSD_X36_P_Dy5",
+                      "PSD_X37_P_Dy5", "PSD_X38_P_Dy5", "PSD_X39_P_Dy5", "PSD_X40_P_Dy5", "PSD_X41_P_Dy5",  "PSD_X_P_VA4_2"};
+                      
+TString hname_NX[90]={"PSD_X41_N_Dy8",  "PSD_X40_N_Dy8", "PSD_X_N_VA4_1", "PSD_X39_N_Dy8", "PSD_X38_N_Dy8",  "PSD_X37_N_Dy8",
+                      "PSD_X36_N_Dy8",  "PSD_X35_N_Dy8", "PSD_X34_N_Dy8", "PSD_X33_N_Dy8", "PSD_X32_N_Dy8",  "PSD_X31_N_Dy8",
+                      "PSD_X30_N_Dy8",  "PSD_X29_N_Dy8", "PSD_X28_N_Dy8", "PSD_X27_N_Dy8", "PSD_X26_N_Dy8",  "PSD_X25_N_Dy8",
+                      "PSD_X24_N_Dy8",  "PSD_X23_N_Dy8", "PSD_X22_N_Dy8", "PSD_X_N_VA4_2", "PSD_X21_N_Dy8",  "PSD_X41_N_Dy5",
+                      "PSD_X40_N_Dy5",  "PSD_X_N_VA3_1", "PSD_X39_N_Dy5", "PSD_X38_N_Dy5", "PSD_X37_N_Dy5",  "PSD_X36_N_Dy5", 
+                      "PSD_X35_N_Dy5",  "PSD_X34_N_Dy5", "PSD_X33_N_Dy5", "PSD_X32_N_Dy5", "PSD_X31_N_Dy5",  "PSD_X30_N_Dy5",
+                      "PSD_X29_N_Dy5",  "PSD_X28_N_Dy5", "PSD_X27_N_Dy5", "PSD_X26_N_Dy5", "PSD_X25_N_Dy5",  "PSD_X24_N_Dy5",
+                      "PSD_X23_N_Dy5",  "PSD_X22_N_Dy5", "PSD_X_N_VA3_2", "PSD_X21_N_Dy5", "PSD_X20_N_Dy8",  "PSD_X19_N_Dy8",
+                      "PSD_X_N_VA2_1",  "PSD_X18_N_Dy8", "PSD_X17_N_Dy8", "PSD_X16_N_Dy8", "PSD_X15_N_Dy8",  "PSD_X14_N_Dy8",
+                      "PSD_X13_N_Dy8",  "PSD_X12_N_Dy8", "PSD_X11_N_Dy8", "PSD_X10_N_Dy8", "PSD_X9_N_Dy8",   "PSD_X8_N_Dy8",
+                      "PSD_X7_N_Dy8",   "PSD_X6_N_Dy8",  "PSD_X5_N_Dy8",  "PSD_X4_N_Dy8",  "PSD_X3_N_Dy8",   "PSD_X2_N_Dy8",
+                      "PSD_X1_N_Dy8",   "PSD_X_N_VA2_2", "PSD_X20_N_Dy5", "PSD_X19_N_Dy5", "PSD_X_N_VA1_1",  "PSD_X18_N_Dy5",
+                      "PSD_X17_N_Dy5",  "PSD_X16_N_Dy5", "PSD_X15_N_Dy5", "PSD_X14_N_Dy5", "PSD_X13_N_Dy5",  "PSD_X12_N_Dy5",
+                      "PSD_X11_N_Dy5",  "PSD_X10_N_Dy5", "PSD_X9_N_Dy5",  "PSD_X8_N_Dy5",  "PSD_X7_N_Dy5",   "PSD_X6_N_Dy5",
+                      "PSD_X5_N_Dy5",   "PSD_X4_N_Dy5",  "PSD_X3_N_Dy5",  "PSD_X2_N_Dy5",  "PSD_X1_N_Dy5",   "PSD_X_N_VA1_2"};                      
+
+TString hname_PY[90]={"PSD_Y1_P_Dy8",  "PSD_Y2_P_Dy8",  "PSD_Y_P_VA1_1", "PSD_Y3_P_Dy8",  "PSD_Y4_P_Dy8",   "PSD_Y5_P_Dy8",
+                      "PSD_Y6_P_Dy8",  "PSD_Y7_P_Dy8",  "PSD_Y8_P_Dy8",  "PSD_Y9_P_Dy8",  "PSD_Y10_P_Dy8",  "PSD_Y11_P_Dy8",
+                      "PSD_Y12_P_Dy8", "PSD_Y13_P_Dy8", "PSD_Y14_P_Dy8", "PSD_Y15_P_Dy8", "PSD_Y16_P_Dy8",  "PSD_Y17_P_Dy8",
+                      "PSD_Y18_P_Dy8", "PSD_Y19_P_Dy8", "PSD_Y20_P_Dy8", "PSD_Y_P_VA1_2", "PSD_Y21_P_Dy8",  "PSD_Y1_P_Dy5",
+                      "PSD_Y2_P_Dy5",  "PSD_Y_P_VA2_1", "PSD_Y3_P_Dy5",  "PSD_Y4_P_Dy5",  "PSD_Y5_P_Dy5",   "PSD_Y6_P_Dy5", 
+                      "PSD_Y7_P_Dy5",  "PSD_Y8_P_Dy5",  "PSD_Y9_P_Dy5",  "PSD_Y10_P_Dy5", "PSD_Y11_P_Dy5",  "PSD_Y12_P_Dy5",
+                      "PSD_Y13_P_Dy5", "PSD_Y14_P_Dy5", "PSD_Y15_P_Dy5", "PSD_Y16_P_Dy5", "PSD_Y17_P_Dy5",  "PSD_Y18_P_Dy5",
+                      "PSD_Y19_P_Dy5", "PSD_Y20_P_Dy5", "PSD_Y_P_VA2_2", "PSD_Y21_P_Dy5", "PSD_Y22_P_Dy8",  "PSD_Y23_P_Dy8",
+                      "PSD_Y_P_VA3_1", "PSD_Y24_P_Dy8", "PSD_Y25_P_Dy8", "PSD_Y26_P_Dy8", "PSD_Y27_P_Dy8",  "PSD_Y28_P_Dy8",
+                      "PSD_Y29_P_Dy8", "PSD_Y30_P_Dy8", "PSD_Y31_P_Dy8", "PSD_Y32_P_Dy8", "PSD_Y33_P_Dy8",  "PSD_Y34_P_Dy8",
+                      "PSD_Y35_P_Dy8", "PSD_Y36_P_Dy8", "PSD_Y37_P_Dy8", "PSD_Y38_P_Dy8", "PSD_Y39_P_Dy8",  "PSD_Y40_P_Dy8",
+                      "PSD_Y41_P_Dy8", "PSD_Y_P_VA3_2", "PSD_Y22_P_Dy5", "PSD_Y23_P_Dy5", "PSD_Y_P_VA4_1",  "PSD_Y24_P_Dy5",
+                      "PSD_Y25_P_Dy5", "PSD_Y26_P_Dy5", "PSD_Y27_P_Dy5", "PSD_Y28_P_Dy5", "PSD_Y29_P_Dy5",  "PSD_Y30_P_Dy5",
+                      "PSD_Y31_P_Dy5", "PSD_Y32_P_Dy5", "PSD_Y33_P_Dy5", "PSD_Y34_P_Dy5", "PSD_Y35_P_Dy5",  "PSD_Y36_P_Dy5",
+                      "PSD_Y37_P_Dy5", "PSD_Y38_P_Dy5", "PSD_Y39_P_Dy5", "PSD_Y40_P_Dy5", "PSD_Y41_P_Dy5",  "PSD_Y_P_VA4_2"};  
+                      
+TString hname_NY[90]={"PSD_Y41_N_Dy8",  "PSD_Y40_N_Dy8", "PSD_Y_N_VA4_1", "PSD_Y39_N_Dy8", "PSD_Y38_N_Dy8",  "PSD_Y37_N_Dy8",
+                      "PSD_Y36_N_Dy8",  "PSD_Y35_N_Dy8", "PSD_Y34_N_Dy8", "PSD_Y33_N_Dy8", "PSD_Y32_N_Dy8",  "PSD_Y31_N_Dy8",
+                      "PSD_Y30_N_Dy8",  "PSD_Y29_N_Dy8", "PSD_Y28_N_Dy8", "PSD_Y27_N_Dy8", "PSD_Y26_N_Dy8",  "PSD_Y25_N_Dy8",
+                      "PSD_Y24_N_Dy8",  "PSD_Y23_N_Dy8", "PSD_Y22_N_Dy8", "PSD_Y_N_VA4_2", "PSD_Y21_N_Dy8",  "PSD_Y41_N_Dy5",
+                      "PSD_Y40_N_Dy5",  "PSD_Y_N_VA3_1", "PSD_Y39_N_Dy5", "PSD_Y38_N_Dy5", "PSD_Y37_N_Dy5",  "PSD_Y36_N_Dy5", 
+                      "PSD_Y35_N_Dy5",  "PSD_Y34_N_Dy5", "PSD_Y33_N_Dy5", "PSD_Y32_N_Dy5", "PSD_Y31_N_Dy5",  "PSD_Y30_N_Dy5",
+                      "PSD_Y29_N_Dy5",  "PSD_Y28_N_Dy5", "PSD_Y27_N_Dy5", "PSD_Y26_N_Dy5", "PSD_Y25_N_Dy5",  "PSD_Y24_N_Dy5",
+                      "PSD_Y23_N_Dy5",  "PSD_Y22_N_Dy5", "PSD_Y_N_VA3_2", "PSD_Y21_N_Dy5", "PSD_Y20_N_Dy8",  "PSD_Y19_N_Dy8",
+                      "PSD_Y_N_VA2_1",  "PSD_Y18_N_Dy8", "PSD_Y17_N_Dy8", "PSD_Y16_N_Dy8", "PSD_Y15_N_Dy8",  "PSD_Y14_N_Dy8",
+                      "PSD_Y13_N_Dy8",  "PSD_Y12_N_Dy8", "PSD_Y11_N_Dy8", "PSD_Y10_N_Dy8", "PSD_Y9_N_Dy8",   "PSD_Y8_N_Dy8",
+                      "PSD_Y7_N_Dy8",   "PSD_Y6_N_Dy8",  "PSD_Y5_N_Dy8",  "PSD_Y4_N_Dy8",  "PSD_Y3_N_Dy8",   "PSD_Y2_N_Dy8",
+                      "PSD_Y1_N_Dy8",   "PSD_Y_N_VA2_2", "PSD_Y20_N_Dy5", "PSD_Y19_N_Dy5", "PSD_Y_N_VA1_1",  "PSD_Y18_N_Dy5",
+                      "PSD_Y17_N_Dy5",  "PSD_Y16_N_Dy5", "PSD_Y15_N_Dy5", "PSD_Y14_N_Dy5", "PSD_Y13_N_Dy5",  "PSD_Y12_N_Dy5",
+                      "PSD_Y11_N_Dy5",  "PSD_Y10_N_Dy5", "PSD_Y9_N_Dy5",  "PSD_Y8_N_Dy5",  "PSD_Y7_N_Dy5",   "PSD_Y6_N_Dy5",
+                      "PSD_Y5_N_Dy5",   "PSD_Y4_N_Dy5",  "PSD_Y3_N_Dy5",  "PSD_Y2_N_Dy5",  "PSD_Y1_N_Dy5",   "PSD_Y_N_VA1_2"};       
+
+  const int n=90;
+  int ii;
+
+ for(ii=0;ii<4;ii++)//
+ {
+ 	  	TString sd=Form("TriggerState_%d", ii+1);
+      HBOOK1(sd.Data(),sd.Data(),4096,0.,4096.,0.);  	  	  	
+ } 
+ 
+  for (ii=0; ii<n; ii++) 
+  {
+  	hnametmp = hname_PX[ii];
+    htitletmp =  hname_PX[ii];
+    HBOOK1(hnametmp.Data(),htitletmp.Data(),17400,-1000,16400,0);      	
+  }
+  
+  for (ii=0; ii<n; ii++) 
+  {
+  	hnametmp = hname_NX[ii];
+    htitletmp =  hname_NX[ii];
+    HBOOK1(hnametmp.Data(),htitletmp.Data(),17400,-1000,16400,0);      	
+  }
+  
+  for (ii=0; ii<n; ii++) 
+  {
+  	hnametmp = hname_PY[ii];
+    htitletmp =  hname_PY[ii];
+    HBOOK1(hnametmp.Data(),htitletmp.Data(),17400,-1000,16400,0);      	
+  }
+  
+  for (ii=0; ii<n; ii++) 
+  {
+  	hnametmp = hname_NY[ii];
+    htitletmp =  hname_NY[ii];
+    HBOOK1(hnametmp.Data(),htitletmp.Data(),17400,-1000,16400,0);      	
+  }*/
+ }
