@@ -1,0 +1,7 @@
+This software is used for DAMPE environment_test.
+It is aimed for PSD raw data decoding and analysis.
+
+This software is developped by
+Zhou Yong,Yu yuhong,Liu longxiang of IMP,CAS.
+
+Contact yong@impcas.ac.cn or 13919887418 for any problem.
