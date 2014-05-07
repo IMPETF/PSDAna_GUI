@@ -3,6 +3,11 @@ It is totally based on ROOT and can be run on Windows and Linux.
 
 This software is intended to be used for DAMPE system environment testing.
 
+Prerequisite:
+ROOT 5.34 or higher
+Visual Studion 2010(for Windows) OR g++(for linux)
+CMake 2.8 or higher
+
 For further information,Pleas contact
 Zhou Yong
 yong@impcas.ac.cn
