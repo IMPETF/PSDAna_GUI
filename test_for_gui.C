@@ -1515,7 +1515,7 @@ char* convert_timecodeTodate(UInt_t timecode)
 }
 
 //---you need to decode the header in the main decoding function---------------------------------------
-int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="raw.root",const char *date=0)
+int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="raw.root",const char *start_date=0,const char* stop_date=0)
 {
     bool minimum_flag;
     int trigger_id_before=0;
@@ -1592,12 +1592,14 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
     packet_num=0;
     unsigned int init_packet_num=0;
     bool init_packet_flag=false;
-    UInt_t start_timecode;
-    if(date){
-        start_timecode=convert_dateTotimecode(date);
+    UInt_t start_timecode,stop_timecode;
+    if(start_date && stop_date){
+        start_timecode=convert_dateTotimecode(start_date);
+        stop_timecode=convert_dateTotimecode(stop_date);
     }
     else{
         start_timecode=-1;
+        stop_timecode=-1;
     }
     unsigned int unprocessed_num=0;
     int type_id;
@@ -1647,7 +1649,7 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
                 time_second=((packet_buffer[10]&0xFF)<<24)+((packet_buffer[11]&0xFF)<<16)+((packet_buffer[12]&0xFF)<<8)+(packet_buffer[13]&0xFF);
                 time_millisecond=((packet_buffer[14]&0xFF)<<8)+(packet_buffer[15]&0xFF);
 
-                if((start_timecode==-1) || (start_timecode <= time_second)){
+                if((start_timecode==-1 && stop_timecode==-1) || ((start_timecode <= time_second) && (stop_timecode >= time_second))){
                     if(!init_packet_flag){
                         init_packet_num=packet_num;
                         init_packet_flag=true;

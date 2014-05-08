@@ -70,7 +70,9 @@ enum CMDIdentifiers
     kB_highthreshEncoding,
     kB_lowthreshOpen,
     kB_lowthreshSave,
-    kB_highthreshSave
+    kB_highthreshSave,
+    kB_getStarttime,
+    kB_getStoptime
 };
 
 enum ProcessID{
@@ -161,6 +163,8 @@ protected:
     TGNumberEntry *fNE_hour;
     TGNumberEntry *fNE_minute;
     TGNumberEntry *fNE_second;
+    TGTextButton *fTBN_starttime;
+    TGTextButton *fTBN_stoptime;
 
     TGNumberEntry *fNE_lowthresh;
     TGNumberEntry *fNE_highthresh;
@@ -260,6 +264,8 @@ public:
     void OnDrawChannel();
     void OnScanChannels();
     void SetResultState(bool flag);
+    void OnGetStartTime();
+    void OnGetStopTime();
 protected:
     GuiFrame(const GuiFrame &onf);
     GuiFrame& operator=(const GuiFrame &onf);
@@ -274,6 +280,7 @@ protected:
     Int_t rawdata_type;
     Int_t analyze_type;
     TString starttime;
+    TString stoptime;
 };
 
 #endif //#ifndef GuiFrame_H

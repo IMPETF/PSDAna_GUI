@@ -127,7 +127,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
     //----------Left Frame---------
     fFFileList = new TGGroupFrame(this,"Engineer Data Decoding",kVerticalFrame|kFixedWidth);
     fFFileList->SetTitlePos(TGGroupFrame::kCenter);
-    fFFileList->Resize(350,600);
+    fFFileList->Resize(350,500);
     AddFrame(fFFileList, new TGLayoutHints(kLHintsExpandY, 1, 1, 1, 1));
     //----------LeftFrame: open dialog--------
         TGHorizontalFrame *butt1 = new TGHorizontalFrame(fFFileList, 380, 25);
@@ -218,7 +218,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
 
     /********************************************************************/
     //---Center Frame----------------------------
-    fFDrawPanel = new TGVerticalFrame(this, 600, 600);
+    fFDrawPanel = new TGVerticalFrame(this, 600, 500);
     AddFrame(fFDrawPanel,new TGLayoutHints(kLHintsExpandX|kLHintsExpandY,1,1,1,1));
         //----------CenterFrame: seperate line 3--
         TGHorizontal3DLine *hsep_3 = new TGHorizontal3DLine(fFDrawPanel, 380, 3);
@@ -281,7 +281,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
     //---Right Frame--------------------
     fFScidataPanel = new TGGroupFrame(this,"Science Data Decoding",kVerticalFrame|kFixedWidth);
     fFScidataPanel->SetTitlePos(TGGroupFrame::kCenter);
-    fFScidataPanel->Resize(350,600);
+    fFScidataPanel->Resize(350,500);
     AddFrame(fFScidataPanel,new TGLayoutHints(kLHintsRight|kLHintsExpandY,1,1,1,1));
         //---RightFrame: Config --------------
             //--Process--
@@ -310,24 +310,24 @@ TGMainFrame(p, w, h, kHorizontalFrame)
         fHBG_mode->Connect("Pressed(Int_t)","GuiFrame",this,"OnModeConfig(Int_t)");
         fHBG_mode->SetState(kFALSE);
         fFScidataPanel->AddFrame(fHBG_mode,new TGLayoutHints(kLHintsExpandX,1,1,1,1));
-            //--Start Time--
-        TGGroupFrame *fGF_time = new TGGroupFrame(fFScidataPanel,"Start Time",kVerticalFrame);
+            //--Time Configutation--
+        TGGroupFrame *fGF_time = new TGGroupFrame(fFScidataPanel,"Time Info",kVerticalFrame);
         fGF_time->Resize(350,100);
         fFScidataPanel->AddFrame(fGF_time,new TGLayoutHints(kLHintsExpandX,1,1,1,1));
             TGHorizontalFrame *fFH_ymd=new TGHorizontalFrame(fGF_time,350,25);
-                fNE_year=new TGNumberEntry(fFH_ymd,2014,4,kNE_year,TGNumberFormat::kNESInteger,
+                fNE_year=new TGNumberEntry(fFH_ymd,2013,4,kNE_year,TGNumberFormat::kNESInteger,
                                                                 TGNumberFormat::kNEANonNegative,
-                                                                TGNumberFormat::kNELLimitMinMax,2013,2020);
+                                                                TGNumberFormat::kNELLimitMinMax,2013,2100);
                 TGLabel *label_year=new TGLabel(fFH_ymd,"Year:");
                 fFH_ymd->AddFrame(label_year,new TGLayoutHints(kLHintsLeft,1,1,1,1));
                 fFH_ymd->AddFrame(fNE_year,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
-                fNE_month=new TGNumberEntry(fFH_ymd,4,2,kNE_month,TGNumberFormat::kNESInteger,
+                fNE_month=new TGNumberEntry(fFH_ymd,1,2,kNE_month,TGNumberFormat::kNESInteger,
                                                                 TGNumberFormat::kNEANonNegative,
                                                                 TGNumberFormat::kNELLimitMinMax,1,12);
                 TGLabel *label_month=new TGLabel(fFH_ymd,"Month:");
                 fFH_ymd->AddFrame(label_month,new TGLayoutHints(kLHintsLeft,1,1,1,1));
                 fFH_ymd->AddFrame(fNE_month,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
-                fNE_day=new TGNumberEntry(fFH_ymd,16,2,kNE_day,TGNumberFormat::kNESInteger,
+                fNE_day=new TGNumberEntry(fFH_ymd,1,2,kNE_day,TGNumberFormat::kNESInteger,
                                                                 TGNumberFormat::kNEANonNegative,
                                                                 TGNumberFormat::kNELLimitMinMax,1,31);
                 TGLabel *label_day=new TGLabel(fFH_ymd,"Day:");
@@ -336,7 +336,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
             fGF_time->AddFrame(fFH_ymd,new TGLayoutHints(kLHintsTop|kLHintsExpandX,1,1,1,1));
 
             TGHorizontalFrame *fFH_hms=new TGHorizontalFrame(fGF_time,350,25);
-                fNE_hour=new TGNumberEntry(fFH_hms,9,2,kNE_hour,TGNumberFormat::kNESInteger,
+                fNE_hour=new TGNumberEntry(fFH_hms,0,2,kNE_hour,TGNumberFormat::kNESInteger,
                                                                 TGNumberFormat::kNEANonNegative,
                                                                 TGNumberFormat::kNELLimitMinMax,0,23);
                 TGLabel *label_hour=new TGLabel(fFH_hms,"Hour:");
@@ -355,6 +355,15 @@ TGMainFrame(p, w, h, kHorizontalFrame)
                 fFH_hms->AddFrame(label_second,new TGLayoutHints(kLHintsLeft,1,1,1,1));
                 fFH_hms->AddFrame(fNE_second,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
             fGF_time->AddFrame(fFH_hms,new TGLayoutHints(kLHintsTop|kLHintsExpandX,1,1,1,1));
+
+             TGHorizontalFrame *fFH_gettime=new TGHorizontalFrame(fGF_time,350,25);
+                fTBN_starttime = new TGTextButton(fFH_gettime,"get START_time",kB_getStarttime);
+                fTBN_starttime->Connect("Clicked()","GuiFrame",this,"OnGetStartTime()");
+                fFH_gettime->AddFrame(fTBN_starttime,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
+                fTBN_stoptime = new TGTextButton(fFH_gettime,"get STOP_time",kB_getStoptime);
+                fTBN_stoptime->Connect("Clicked()","GuiFrame",this,"OnGetStopTime()");
+                fFH_gettime->AddFrame(fTBN_stoptime,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
+             fGF_time->AddFrame(fFH_gettime,new TGLayoutHints(kLHintsTop|kLHintsExpandX,1,1,1,1));
         //---RightFrame: Analyze-------------
         fGF_analyze = new TGGroupFrame(fFScidataPanel,"Decode",kVerticalFrame);
         fGF_analyze->SetTitlePos(TGGroupFrame::kCenter);
@@ -2353,6 +2362,108 @@ void GuiFrame::OnModeConfig(Int_t mode_id)
     */
 }
 
+void GuiFrame::OnGetStartTime()
+{
+    Int_t year,month,day,hour,minute,second;
+    year=fNE_year->GetIntNumber();
+    month=fNE_month->GetIntNumber();
+    day=fNE_day->GetIntNumber();
+    hour=fNE_hour->GetIntNumber();
+    minute=fNE_minute->GetIntNumber();
+    second=fNE_second->GetIntNumber();
+
+    starttime.Form("%d",year);
+
+    if(month<10){
+        starttime.Append(Form("0%d",month));
+    }
+    else{
+        starttime.Append(Form("%d",month));
+    }
+
+    if(day<10){
+        starttime.Append(Form("0%d",day));
+    }
+    else{
+        starttime.Append(Form("%d",day));
+    }
+
+    if(hour<10){
+        starttime.Append(Form("0%d",hour));
+    }
+    else{
+        starttime.Append(Form("%d",hour));
+    }
+
+    if(minute<10){
+        starttime.Append(Form("0%d",minute));
+    }
+    else{
+        starttime.Append(Form("%d",minute));
+    }
+
+    if(second<10){
+        starttime.Append(Form("0%d",second));
+    }
+    else{
+        starttime.Append(Form("%d",second));
+    }
+
+    ShowText("Start Time:");
+    ShowText(starttime.Data());
+}
+
+void GuiFrame::OnGetStopTime()
+{
+    Int_t year,month,day,hour,minute,second;
+    year=fNE_year->GetIntNumber();
+    month=fNE_month->GetIntNumber();
+    day=fNE_day->GetIntNumber();
+    hour=fNE_hour->GetIntNumber();
+    minute=fNE_minute->GetIntNumber();
+    second=fNE_second->GetIntNumber();
+
+    stoptime.Form("%d",year);
+
+    if(month<10){
+        stoptime.Append(Form("0%d",month));
+    }
+    else{
+        stoptime.Append(Form("%d",month));
+    }
+
+    if(day<10){
+        stoptime.Append(Form("0%d",day));
+    }
+    else{
+        stoptime.Append(Form("%d",day));
+    }
+
+    if(hour<10){
+        stoptime.Append(Form("0%d",hour));
+    }
+    else{
+        stoptime.Append(Form("%d",hour));
+    }
+
+    if(minute<10){
+        stoptime.Append(Form("0%d",minute));
+    }
+    else{
+        stoptime.Append(Form("%d",minute));
+    }
+
+    if(second<10){
+        stoptime.Append(Form("0%d",second));
+    }
+    else{
+        stoptime.Append(Form("%d",second));
+    }
+
+    ShowText("Stop time:");
+    ShowText(stoptime.Data());
+}
+
 void GuiFrame::OnInputSciData()
 {
     new TGFileDialog(gClient->GetRoot(),this,kFDOpen,fi_Sci_input);
@@ -2472,51 +2583,6 @@ void GuiFrame::OnSciAnalyze()
 
 void GuiFrame::OnSciDecode()
 {
-    //----start time---
-    Int_t year,month,day,hour,minute,second;
-    year=fNE_year->GetIntNumber();
-    month=fNE_month->GetIntNumber();
-    day=fNE_day->GetIntNumber();
-    hour=fNE_hour->GetIntNumber();
-    minute=fNE_minute->GetIntNumber();
-    second=fNE_second->GetIntNumber();
-
-    starttime.Form("%d",year);
-
-    if(month<10){
-        starttime.Append(Form("0%d",month));
-    }
-    else{
-        starttime.Append(Form("%d",month));
-    }
-
-    if(day<10){
-        starttime.Append(Form("0%d",day));
-    }
-    else{
-        starttime.Append(Form("%d",day));
-    }
-
-    if(hour<10){
-        starttime.Append(Form("0%d",hour));
-    }
-    else{
-        starttime.Append(Form("%d",hour));
-    }
-
-    if(minute<10){
-        starttime.Append(Form("0%d",minute));
-    }
-    else{
-        starttime.Append(Form("%d",minute));
-    }
-
-    if(second<10){
-        starttime.Append(Form("0%d",second));
-    }
-    else{
-        starttime.Append(Form("%d",second));
-    }
     //---input dir---
     TString inputDirName,inputBaseName;
     inputBaseName=gSystem->BaseName(input_sci_filename.Data());
@@ -2531,7 +2597,7 @@ void GuiFrame::OnSciDecode()
     ShowText("Start Decoding:");
     FILE* fp=fopen(Form("%s/decode.log",outputDirName.Data()),"w");
     convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
-                        outputDirName.Data(),outputBaseName.Data(),starttime.Data());
+                        outputDirName.Data(),outputBaseName.Data(),starttime.Data(),stoptime.Data());
     fclose(fp);
     ShowText("Decode End.");
     //ShowText(inputDirName.Data());

@@ -5,9 +5,9 @@
 int main(int argc, char *argv[])
 {
 
-    TApplication apponline("Online", &argc, argv);
+    TApplication apponline("PSDAna_GUI", &argc, argv);
 
-    GuiFrame *mygui = new GuiFrame(gClient->GetRoot(), 250, 250);
+    GuiFrame *mygui = new GuiFrame(gClient->GetRoot(), 10, 10);
 
     apponline.Run();
 
