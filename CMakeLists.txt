@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(GUI)
-set(GUI_VERSION_MAJOR 1)
-set(GUI_VERSION_MINOR 1)
+project(PSDAna_GUI)
+set(PSDAna_GUI_VERSION_MAJOR 1)
+set(PSDAna_GUI_VERSION_MINOR 1)
 
 #system configuration
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${GUI_SOURCE_DIR}/cmake)
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PSDAna_GUI_SOURCE_DIR}/cmake)
 #message(STATUS "${CMAKE_MODULE_PATH}")
 #include(CMakeParseArguments)
 #set ROOT system
@@ -37,6 +37,7 @@ else(WIN32)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif(WIN32)
 include_directories(${ROOT_INCLUDE_DIR})
+message(STATUS "ROOT_INCLUDE_DIR = ${ROOT_INCLUDE_DIR}")
 
 #root library
 if(WIN32)
@@ -61,7 +62,8 @@ else(WIN32)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif(WIN32)
 link_directories(${ROOT_LIBRARY_DIR})
-message(STATUS "${ROOT_LIBRARIES}")
+message(STATUS "ROOT_LIBRARY_DIR = ${ROOT_LIBRARY_DIR}")
+message(STATUS "ROOT_LIBRARIES = ${ROOT_LIBRARIES}")
 
 #process root dictionary
 #define a function to process dictionary generation
@@ -121,17 +123,17 @@ endforeach()
 #add executable
 set(PRIMARY_SOURCES main.cxx GuiFrame.cxx)
 set(TOTAL_SOURCES ${PRIMARY_SOURCES} ${ROOT_DICT_SOURCES})
-add_executable(gui ${TOTAL_SOURCES})
-target_link_libraries(gui ${ROOT_LIBRARIES})
+add_executable(PSDAna_GUI ${TOTAL_SOURCES})
+target_link_libraries(PSDAna_GUI ${ROOT_LIBRARIES})
 
 #install the targets
-install(TARGETS gui DESTINATION bin)
+install(TARGETS PSDAna_GUI DESTINATION bin)
 install(DIRECTORY documents/ DESTINATION doc)
 
 #build a installer package
 include(InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
-set (CPACK_PACKAGE_VERSION_MAJOR "${GUI_VERSION_MAJOR}")
-set (CPACK_PACKAGE_VERSION_MINOR "${GUI_VERSION_MINOR}")
-set (CPACK_PACKAGE_EXECUTABLES gui "PSD_GUI")
+set (CPACK_PACKAGE_VERSION_MAJOR "${PSDAna_GUI_VERSION_MAJOR}")
+set (CPACK_PACKAGE_VERSION_MINOR "${PSDAna_GUI_VERSION_MINOR}")
+set (CPACK_PACKAGE_EXECUTABLES PSDAna_GUI "PSDAna_GUI")
 include (CPack)
