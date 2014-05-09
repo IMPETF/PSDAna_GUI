@@ -1496,7 +1496,7 @@ char* convert_timecodeTodate(UInt_t timecode)
         else{
             temp_daynum+=normal_monthday[i];
         }
-        if(temp_daynum>=current_daynum){
+        if(temp_daynum > current_daynum){
             current_day=current_daynum-temp_daynum_before+1;
             break;
         }
