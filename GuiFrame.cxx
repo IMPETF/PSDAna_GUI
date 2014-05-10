@@ -357,12 +357,19 @@ TGMainFrame(p, w, h, kHorizontalFrame)
             fGF_time->AddFrame(fFH_hms,new TGLayoutHints(kLHintsTop|kLHintsExpandX,1,1,1,1));
 
              TGHorizontalFrame *fFH_gettime=new TGHorizontalFrame(fGF_time,350,25);
-                fTBN_starttime = new TGTextButton(fFH_gettime,"get START_time",kB_getStarttime);
-                fTBN_starttime->Connect("Clicked()","GuiFrame",this,"OnGetStartTime()");
-                fFH_gettime->AddFrame(fTBN_starttime,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
-                fTBN_stoptime = new TGTextButton(fFH_gettime,"get STOP_time",kB_getStoptime);
+                fCBN_usetimecode=new TGCheckButton(fFH_gettime,"UseTimecode",kB_useTimecode);
+                fCBN_usetimecode->SetToolTipText("Enable/Disable start/stop time configuration");
+                fCBN_usetimecode->Connect("Toggled(Bool_t)","GuiFrame",this,"OnUseTimecode(Bool_t)");
+                fCBN_usetimecode->SetOn();
+                fFH_gettime->AddFrame(fCBN_usetimecode,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
+                fTBN_stoptime = new TGTextButton(fFH_gettime,"STOP",kB_getStoptime);
                 fTBN_stoptime->Connect("Clicked()","GuiFrame",this,"OnGetStopTime()");
-                fFH_gettime->AddFrame(fTBN_stoptime,new TGLayoutHints(kLHintsLeft|kLHintsExpandX,1,1,1,1));
+                fTBN_stoptime->SetToolTipText("Configure Stop Time");
+                fFH_gettime->AddFrame(fTBN_stoptime,new TGLayoutHints(kLHintsRight|kLHintsExpandX,1,1,1,1));
+                fTBN_starttime = new TGTextButton(fFH_gettime,"START",kB_getStarttime);
+                fTBN_starttime->SetToolTipText("Configure Start Time");
+                fTBN_starttime->Connect("Clicked()","GuiFrame",this,"OnGetStartTime()");
+                fFH_gettime->AddFrame(fTBN_starttime,new TGLayoutHints(kLHintsRight|kLHintsExpandX,1,1,1,1));
              fGF_time->AddFrame(fFH_gettime,new TGLayoutHints(kLHintsTop|kLHintsExpandX,1,1,1,1));
         //---RightFrame: Analyze-------------
         fGF_analyze = new TGGroupFrame(fFScidataPanel,"Decode",kVerticalFrame);
@@ -2362,6 +2369,30 @@ void GuiFrame::OnModeConfig(Int_t mode_id)
     */
 }
 
+void GuiFrame::OnUseTimecode(Bool_t flag)
+{
+    if(flag){
+        fNE_year->SetState(kTRUE);
+        fNE_month->SetState(kTRUE);
+        fNE_day->SetState(kTRUE);
+        fNE_hour->SetState(kTRUE);
+        fNE_minute->SetState(kTRUE);
+        fNE_second->SetState(kTRUE);
+        fTBN_starttime->SetState(kButtonUp);
+        fTBN_stoptime->SetState(kButtonUp);
+    }
+    else{
+        fNE_year->SetState(kFALSE);
+        fNE_month->SetState(kFALSE);
+        fNE_day->SetState(kFALSE);
+        fNE_hour->SetState(kFALSE);
+        fNE_minute->SetState(kFALSE);
+        fNE_second->SetState(kFALSE);
+        fTBN_starttime->SetState(kButtonDisabled);
+        fTBN_stoptime->SetState(kButtonDisabled);
+    }
+}
+
 void GuiFrame::OnGetStartTime()
 {
     Int_t year,month,day,hour,minute,second;
@@ -2596,8 +2627,16 @@ void GuiFrame::OnSciDecode()
     //---convert----
     ShowText("Start Decoding:");
     FILE* fp=fopen(Form("%s/decode.log",outputDirName.Data()),"w");
-    convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+    if(fCBN_usetimecode->IsOn()){
+        ShowText("Use Timecode Info");
+        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
                         outputDirName.Data(),outputBaseName.Data(),starttime.Data(),stoptime.Data());
+    }
+    else{
+        ShowText("No Timecode Info Used");
+        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+                        outputDirName.Data(),outputBaseName.Data(),0,0);
+    }
     fclose(fp);
     ShowText("Decode End.");
     //ShowText(inputDirName.Data());

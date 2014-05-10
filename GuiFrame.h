@@ -72,7 +72,8 @@ enum CMDIdentifiers
     kB_lowthreshSave,
     kB_highthreshSave,
     kB_getStarttime,
-    kB_getStoptime
+    kB_getStoptime,
+    kB_useTimecode
 };
 
 enum ProcessID{
@@ -165,6 +166,7 @@ protected:
     TGNumberEntry *fNE_second;
     TGTextButton *fTBN_starttime;
     TGTextButton *fTBN_stoptime;
+    TGCheckButton* fCBN_usetimecode;
 
     TGNumberEntry *fNE_lowthresh;
     TGNumberEntry *fNE_highthresh;
@@ -266,6 +268,8 @@ public:
     void SetResultState(bool flag);
     void OnGetStartTime();
     void OnGetStopTime();
+    void OnUseTimecode(Bool_t flag);
+
 protected:
     GuiFrame(const GuiFrame &onf);
     GuiFrame& operator=(const GuiFrame &onf);
