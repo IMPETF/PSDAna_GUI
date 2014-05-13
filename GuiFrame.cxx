@@ -2534,7 +2534,7 @@ void GuiFrame::OnRefSciData()
 
 void GuiFrame::OnSciAnalyze()
 {
-    //ShowText("OnSciAnalyze");
+    ShowText("Analyzing Begin.");
     //---input dir---
     TString inputDirName,inputBaseName;
     inputBaseName=gSystem->BaseName(input_sci_filename.Data());
@@ -2605,11 +2605,13 @@ void GuiFrame::OnSciAnalyze()
         draw_channels(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
         draw_mip(input_sci_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
         draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
+        draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
         break;
     default:
         break;
     }
     fclose(fp);
+    ShowText("Analyzing End.");
 }
 
 void GuiFrame::OnSciDecode()

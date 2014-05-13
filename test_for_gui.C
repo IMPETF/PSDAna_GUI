@@ -2146,6 +2146,226 @@ int getpedseed_event(const char* parentDir,const char* infile,const char* outDir
     return 0;
 }
 
+int getped_u(TTree* tree_in,const UInt_t startEntry,const UInt_t eNum,Float_t *xpos_mean_fit,Float_t *xpos_sigma_fit,Float_t* xneg_mean_fit,Float_t* xneg_sigma_fit,
+                         Float_t *ypos_mean_fit,Float_t *ypos_sigma_fit,Float_t *yneg_mean_fit,Float_t *yneg_sigma_fit)
+{
+    Float_t xpos_mean[90]={351.177,311.881,281.001,336.517,258.712,313.785,367.483,306.686,365.061,400.932,389.930,414.645,381.898,411.290,457.176,472.376,463.821,539.654,495.049,496.161,441.246,514.411,469.810,480.274,360.767,386.358,352.114,449.317,322.460,344.191,420.976,343.341,240.283,314.475,384.396,319.270,298.015,267.687,222.540,274.143,163.888,253.895,150.799,200.748,175.790,145.786,524.328,515.608,526.098,480.832,485.753,494.254,464.564,435.246,343.468,312.436,341.823,331.957,229.788,180.386,167.866,143.693,157.214,148.327,113.189,226.599,165.258,195.581,410.142,399.905,425.209,444.228,467.265,398.202,483.074,502.183,482.189,552.946,492.655,465.126,451.151,434.841,447.516,462.986,427.054,431.159,441.765,404.810,370.627,377.385};
+    Float_t xneg_mean[90]={446.400,520.242,514.340,474.583,496.813,511.273,451.954,431.075,434.599,440.726,489.202,435.936,499.171,509.421,467.255,535.061,496.474,563.510,574.983,541.864,537.884,496.657,596.976,366.517,391.959,375.442,351.044,405.371,442.040,453.049,475.211,478.180,435.166,421.951,420.496,458.119,457.642,411.283,510.404,547.936,484.632,467.074,450.268,434.619,498.571,393.499,420.707,422.288,433.151,393.430,429.871,415.825,436.522,474.949,460.671,484.791,485.606,453.007,471.585,500.918,497.301,502.769,396.582,485.579,465.391,514.925,499.670,426.066,424.271,463.562,454.416,464.023,409.735,455.579,354.684,375.137,407.772,453.645,461.221,462.112,465.888,447.161,534.270,467.812,467.011,472.202,423.727,475.979,441.521,414.418};
+    Float_t ypos_mean[90]={452.297,396.719,465.625,479.740,528.990,451.267,480.754,451.002,424.205,458.843,438.643,442.601,436.487,414.472,413.737,369.849,492.507,466.578,337.399,441.559,374.001,292.447,310.534,376.861,384.398,464.878,458.101,409.130,432.157,468.180,525.836,426.869,496.900,449.711,540.653,521.539,493.202,489.634,462.673,486.457,399.784,497.665,358.482,479.102,343.498,421.276,399.754,497.368,455.586,454.538,413.200,431.225,420.818,345.452,323.384,384.369,422.946,351.598,326.737,311.787,384.763,351.652,284.502,269.942,281.036,241.743,251.200,222.739,462.892,475.289,442.673,449.252,420.579,475.795,479.726,412.265,460.324,410.219,446.704,432.104,474.956,529.460,500.751,453.041,417.644,420.573,377.888,386.825,331.463,392.985};
+    Float_t yneg_mean[90]={417.906,472.811,455.049,452.441,453.630,426.665,413.650,458.842,491.942,415.372,438.802,455.469,401.188,413.670,430.686,444.817,489.856,400.641,473.606,387.638,458.840,453.257,439.884,315.324,256.090,265.857,255.013,298.694,286.077,283.444,285.370,303.172,315.953,275.825,234.171,293.651,249.059,276.830,270.094,341.402,282.482,244.047,257.179,300.565,285.312,233.734,427.574,432.091,328.272,419.002,395.342,355.594,297.112,425.499,384.624,395.578,408.127,322.187,396.572,409.241,430.655,393.992,374.721,431.261,373.104,342.076,386.307,329.733,499.101,476.227,497.179,514.796,493.029,511.467,495.702,494.944,478.117,528.368,518.425,441.704,552.574,457.136,484.718,451.821,499.494,413.811,472.878,330.334,307.009,269.479};
+
+    Float_t *tmp_mean;
+    Float_t *tmp_mean_fit,*tmp_sigma_fit;
+    TString label[4]={"xpos","xneg","ypos","yneg"};
+
+    Int_t channel;
+    Float_t xmin,xmax;
+    Char_t channel_label[10];
+
+    TH1F* hist;
+    TF1 *fgaus;
+    for(Int_t fee_index=0;fee_index<4;fee_index++){
+        switch(fee_index)
+        {
+        case 0:
+            tmp_mean=xpos_mean;
+            tmp_mean_fit=xpos_mean_fit;
+            tmp_sigma_fit=xpos_sigma_fit;
+            break;
+        case 1:
+            tmp_mean=xneg_mean;
+            tmp_mean_fit=xneg_mean_fit;
+            tmp_sigma_fit=xneg_sigma_fit;
+            break;
+        case 2:
+            tmp_mean=ypos_mean;
+            tmp_mean_fit=ypos_mean_fit;
+            tmp_sigma_fit=ypos_sigma_fit;
+            break;
+        case 3:
+            tmp_mean=yneg_mean;
+            tmp_mean_fit=yneg_mean_fit;
+            tmp_sigma_fit=yneg_sigma_fit;
+            break;
+        default:
+            return -1;
+        }
+
+        for(Int_t ch_id=0;ch_id<90;ch_id++){
+            channel=ch_id+1;
+            sprintf(channel_label,"%s_%d",label[fee_index].Data(),channel);
+            hist=new TH1F(channel_label,channel_label,2000,-0.5,1999.5);
+            tree_in->Project(channel_label,Form("%s[%d]",label[fee_index].Data(),ch_id),"","",eNum,startEntry);
+
+            xmin=tmp_mean[ch_id]-200;
+            xmax=tmp_mean[ch_id]+200;
+            fgaus=new TF1("fgaus","gaus",xmin,xmax);
+            //fgaus->SetNpx(1000);
+            hist->Fit("fgaus","rq0","goff");
+            tmp_mean_fit[ch_id]=fgaus->GetParameter(1);
+            tmp_sigma_fit[ch_id]=fgaus->GetParameter(2);
+
+            delete hist;
+            delete fgaus;
+        }
+    }
+
+    return 0;
+}
+
+Float_t getmean_u(const Float_t *data,const Int_t *valid_channel,const Int_t channel_num,Bool_t exclude_flag=false)
+{
+    Float_t sum=0.0;
+    Float_t mean=0.0;
+    if(!exclude_flag){
+        for(int i=0;i<channel_num;i++){
+            sum+=data[valid_channel[i]];
+        }
+        mean=sum/channel_num;
+    }
+    else{
+        for(int i=0;i<90;i++){
+            sum+=data[i];
+        }
+        for(int i=0;i<channel_num;i++){
+            sum-=data[valid_channel[i]];
+        }
+        mean=sum/(90-channel_num);
+    }
+
+    return mean;
+}
+
+int draw_pedVStime(const char* parentDir,const char * infile,const char* outDir,const char* outfile,const Int_t eNum=2000)
+{
+    int id8[41]={0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
+    int id5[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
+    int idempty[8]={2,21,25,44,48,67,70,89};
+    TString label[4]={"xpos","xneg","ypos","yneg"};
+
+    Float_t mean_fit[4][90];
+    Float_t sigma_fit[4][90];
+    Float_t tmp_mean_mean,tmp_sigma_mean;
+
+    char infname[200],outfname[200];
+    sprintf(infname,"%s/%s",parentDir,infile);
+    TFile* file_in=new TFile(infname);
+    TString prefix;
+    prefix=outfile;
+    prefix.ReplaceAll(".root","");
+    sprintf(outfname,"%s/%s.root",outDir,prefix.Data());
+    TFile* file_out=new TFile(outfname,"update");
+    TGraph* gr_dy8_mean[4],*gr_dy8_sigma[4];
+    TGraph* gr_dy5_mean[4],*gr_dy5_sigma[4];
+    TGraph* gr_validch_mean[4],*gr_validch_sigma[4];
+    TGraph* gr_emptych_mean[4],*gr_emptych_sigma[4];
+    for(int i=0;i<4;i++){
+        gr_dy5_mean[i]=new TGraph();
+        gr_dy5_sigma[i]=new TGraph();
+        gr_dy5_mean[i]->SetName(Form("%s_dy5_pedMeanVStime",label[i].Data()));
+        gr_dy5_sigma[i]->SetName(Form("%s_dy5_pedSigmaVStime",label[i].Data()));
+        gr_dy5_mean[i]->SetTitle(Form("%s_dy5: pedestal_Mean VS time",label[i].Data()));
+        gr_dy5_sigma[i]->SetTitle(Form("%s_dy5: pedestal_Sigma VS time",label[i].Data()));
+        gr_dy5_mean[i]->SetMaximum(650.);gr_dy5_mean[i]->SetMinimum(250.);
+        gr_dy5_sigma[i]->SetMaximum(60.);gr_dy5_sigma[i]->SetMinimum(0);
+        gr_dy8_mean[i]=new TGraph();
+        gr_dy8_sigma[i]=new TGraph();
+        gr_dy8_mean[i]->SetName(Form("%s_dy8_pedMeanVStime",label[i].Data()));
+        gr_dy8_sigma[i]->SetName(Form("%s_dy8_pedSigmaVStime",label[i].Data()));
+        gr_dy8_mean[i]->SetTitle(Form("%s_dy8: pedestal_Mean VS time",label[i].Data()));
+        gr_dy8_sigma[i]->SetTitle(Form("%s_dy8: pedestal_Sigma VS time",label[i].Data()));
+        gr_dy8_mean[i]->SetMaximum(650.);gr_dy8_mean[i]->SetMinimum(250.);
+        gr_dy8_sigma[i]->SetMaximum(60.);gr_dy8_sigma[i]->SetMinimum(0);
+        gr_validch_mean[i]=new TGraph();
+        gr_validch_sigma[i]=new TGraph();
+        gr_validch_mean[i]->SetName(Form("%s_validch_pedMeanVStime",label[i].Data()));
+        gr_validch_sigma[i]->SetName(Form("%s_validch_pedSigmaVStime",label[i].Data()));
+        gr_validch_mean[i]->SetTitle(Form("%s_validch: pedestal_Mean VS time",label[i].Data()));
+        gr_validch_sigma[i]->SetTitle(Form("%s_validch: pedestal_Sigma VS time",label[i].Data()));
+        gr_validch_mean[i]->SetMaximum(650.);gr_validch_mean[i]->SetMinimum(250.);
+        gr_validch_sigma[i]->SetMaximum(60.);gr_validch_sigma[i]->SetMinimum(0);
+        gr_emptych_mean[i]=new TGraph();
+        gr_emptych_sigma[i]=new TGraph();
+        gr_emptych_mean[i]->SetName(Form("%s_emptych_pedMeanVStime",label[i].Data()));
+        gr_emptych_sigma[i]->SetName(Form("%s_emptych_pedSigmaVStime",label[i].Data()));
+        gr_emptych_mean[i]->SetTitle(Form("%s_emptych: pedestal_Mean VS time",label[i].Data()));
+        gr_emptych_sigma[i]->SetTitle(Form("%s_emptych: pedestal_Sigma VS time",label[i].Data()));
+        gr_emptych_mean[i]->SetMaximum(650.);gr_emptych_mean[i]->SetMinimum(250.);
+        gr_emptych_sigma[i]->SetMaximum(20.);gr_emptych_sigma[i]->SetMinimum(0);
+    }
+
+    TTree* tree_in=(TTree*)file_in->Get("PSD");
+    UInt_t entries=tree_in->GetEntries();
+    Int_t nPoints;
+    Int_t entries_last;
+    if((entries%eNum) > 900){
+        nPoints=entries/eNum + 1;
+        entries_last=entries%eNum;
+    }
+    else{
+        nPoints=entries/eNum;
+        entries_last=entries%eNum + eNum;
+    }
+    for(int i=0;i<nPoints;i++){
+        if(i == (nPoints-1)){
+            getped_u(tree_in,i*eNum,entries_last,mean_fit[0],sigma_fit[0],mean_fit[1],sigma_fit[1],mean_fit[2],sigma_fit[2],mean_fit[3],sigma_fit[3]);
+        }
+        else{
+            getped_u(tree_in,i*eNum,eNum,mean_fit[0],sigma_fit[0],mean_fit[1],sigma_fit[1],mean_fit[2],sigma_fit[2],mean_fit[3],sigma_fit[3]);
+        }
+
+        for(int fee_id=0;fee_id<4;fee_id++){
+            tmp_mean_mean=getmean_u(mean_fit[fee_id],id5,41);
+            tmp_sigma_mean=getmean_u(sigma_fit[fee_id],id5,41);
+            gr_dy5_mean[fee_id]->SetPoint(i,i+1,tmp_mean_mean);
+            gr_dy5_sigma[fee_id]->SetPoint(i,i+1,tmp_sigma_mean);
+
+            tmp_mean_mean=getmean_u(mean_fit[fee_id],id8,41);
+            tmp_sigma_mean=getmean_u(sigma_fit[fee_id],id8,41);
+            gr_dy8_mean[fee_id]->SetPoint(i,i+1,tmp_mean_mean);
+            gr_dy8_sigma[fee_id]->SetPoint(i,i+1,tmp_sigma_mean);
+
+            tmp_mean_mean=getmean_u(mean_fit[fee_id],idempty,8,true);
+            tmp_sigma_mean=getmean_u(sigma_fit[fee_id],idempty,8,true);
+            gr_validch_mean[fee_id]->SetPoint(i,i+1,tmp_mean_mean);
+            gr_validch_sigma[fee_id]->SetPoint(i,i+1,tmp_sigma_mean);
+
+            tmp_mean_mean=getmean_u(mean_fit[fee_id],idempty,8);
+            tmp_sigma_mean=getmean_u(sigma_fit[fee_id],idempty,8);
+            gr_emptych_mean[fee_id]->SetPoint(i,i+1,tmp_mean_mean);
+            gr_emptych_sigma[fee_id]->SetPoint(i,i+1,tmp_sigma_mean);
+        }
+    }
+
+    TCanvas* can=new TCanvas("can","can",1000,500);
+    can->Divide(2,1);
+    can->Print(Form("%s/%s_pedVStime.pdf[",outDir,prefix.Data()));
+    file_out->cd();
+    for(int i=0;i<4;i++){
+        gr_dy5_mean[i]->Write(0,TObject::kOverwrite);
+        gr_dy5_sigma[i]->Write(0,TObject::kOverwrite);
+        gr_dy8_mean[i]->Write(0,TObject::kOverwrite);
+        gr_dy8_sigma[i]->Write(0,TObject::kOverwrite);
+        gr_validch_mean[i]->Write(0,TObject::kOverwrite);
+        gr_validch_sigma[i]->Write(0,TObject::kOverwrite);
+        gr_emptych_mean[i]->Write(0,TObject::kOverwrite);
+        gr_emptych_sigma[i]->Write(0,TObject::kOverwrite);
+
+        can->cd(1);
+        gr_validch_mean[i]->Draw("A*");
+        can->cd(2);
+        gr_validch_sigma[i]->Draw("A*");
+        can->Print(Form("%s/%s_pedVStime.pdf",outDir,prefix.Data()));
+    }
+    can->Print(Form("%s/%s_pedVStime.pdf]",outDir,prefix.Data()));
+
+    delete can;
+    delete file_in;
+    delete file_out;
+
+    return 0;
+}
+
 int draw_rel(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,const char* outName)
 {
     TString label[4]={"xpos","xneg","ypos","yneg"};
@@ -3078,6 +3298,7 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
 
     can->Print(Form("%s/mipVSstrip.pdf",outDir));
     TFile *file_out=new TFile(Form("%s/%s",outDir,outName),"update");
+    file_out->cd();
     can->Write(0,TObject::kOverwrite);
     hx->Write(0,TObject::kOverwrite);
     hy->Write(0,TObject::kOverwrite);
