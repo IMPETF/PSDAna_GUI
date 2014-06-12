@@ -236,8 +236,6 @@ Int_t langaupro(Double_t *params, Double_t &maxx, Double_t &FWHM) {
 
 TF1* langaus( TH1F *poHist,float& mpv,float& fwhm,float ped_mean,float ped_sigma)
 {
-    //poHist->Rebin(10);
-
     // Setting fit range and start values
     Double_t fr[2];
     Double_t sv[4],paramlow[4],paramhigh[4],fparam[4],fpe[4];
@@ -261,6 +259,19 @@ TF1* langaus( TH1F *poHist,float& mpv,float& fwhm,float ped_mean,float ped_sigma
     fwhm=fparam[0];
 
     return fit;
+}
+
+TF1* pedfit(TH1F* poHist,float ped_mean,float ped_sigma,float& pedout_mean,float& pedout_sigma)
+{
+    //get pedestal from mips histogram
+    TF1* fgaus=new TF1(Form("ped_%s",poHist->GetName()),"gaus",ped_mean-30.0,ped_mean+30.0);
+    //fgaus->SetParameter(1,ped_mean);
+    //fgaus->SetParameter(2,ped_sigma);
+    poHist->Fit(Form("ped_%s",poHist->GetName()),"Rq0");
+    pedout_mean=fgaus->GetParameter(1);
+    pedout_sigma=fgaus->GetParameter(2);
+
+    return fgaus;
 }
 
 /*********   This part is for PSD Nanjing testing. There are 4 FEEs  *************/
@@ -2583,13 +2594,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("sigma",&sigma);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id].Data()));
         tree_ref->SetBranchAddress("sigma",&sigma_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id8[ch_id]);
+            tree_test->GetEntryWithIndex(id8[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_xpos->SetPoint(ch_id,ch_id+1,sigma);
@@ -2609,13 +2621,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("sigma",&sigma);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_ref->SetBranchAddress("sigma",&sigma_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id8[ch_id]);
+            tree_test->GetEntryWithIndex(id8[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_ypos->SetPoint(ch_id,41-ch_id,sigma);
@@ -2704,13 +2717,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("sigma",&sigma);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id].Data()));
         tree_ref->SetBranchAddress("sigma",&sigma_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id5[ch_id]);
+            tree_test->GetEntryWithIndex(id5[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_xpos->SetPoint(ch_id,ch_id+1,sigma);
@@ -2730,13 +2744,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("sigma",&sigma);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_ref->SetBranchAddress("sigma",&sigma_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id5[ch_id]);
+            tree_test->GetEntryWithIndex(id5[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_ypos->SetPoint(ch_id,41-ch_id,sigma);
@@ -2825,13 +2840,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("mean",&mean);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id].Data()));
         tree_ref->SetBranchAddress("mean",&mean_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id8[ch_id]);
+            tree_test->GetEntryWithIndex(id8[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_xpos->SetPoint(ch_id,ch_id+1,mean);
@@ -2851,13 +2867,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("mean",&mean);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_ref->SetBranchAddress("mean",&mean_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id8[ch_id]);
+            tree_test->GetEntryWithIndex(id8[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_ypos->SetPoint(ch_id,41-ch_id,mean);
@@ -2946,13 +2963,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("mean",&mean);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id].Data()));
         tree_ref->SetBranchAddress("mean",&mean_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id5[ch_id]);
+            tree_test->GetEntryWithIndex(id5[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_xpos->SetPoint(ch_id,ch_id+1,mean);
@@ -2972,13 +2990,14 @@ int draw_relp(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("mean",&mean);
+        tree_test->BuildIndex("channel");
 
         tree_ref=(TTree*)file_ref->Get(Form("%s_ped",label[fee_id+2].Data()));
         tree_ref->SetBranchAddress("mean",&mean_ref);
         tree_ref->BuildIndex("channel");
 
         for(int ch_id=0;ch_id<41;ch_id++){
-            tree_test->GetEntry(id5[ch_id]);
+            tree_test->GetEntryWithIndex(id5[ch_id]+1);
             tree_ref->GetEntryWithIndex(channel);
             if(fee_id==0){
                 graphp_sigma_ypos->SetPoint(ch_id,41-ch_id,mean);
@@ -3386,6 +3405,17 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     int id5[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
 
     TFile* file=new TFile(Form("%s/%s",pardir,filename));
+    int channel;
+    float ped,sigma;
+    char label[4][5]={"xpos","xneg","ypos","yneg"};
+    TFile* file_ped=new TFile(Form("%s/new_ped.root",outDir),"recreate");
+    TTree* tree_ped[4];
+    for(int i=0;i<4;i++){
+        tree_ped[i]=new TTree(Form("%s_ped",label[i]),Form("%s_ped",label[i]));
+        tree_ped[i]->Branch("channel",&channel,"channel/I");
+        tree_ped[i]->Branch("mean",&ped,"mean/F");
+        tree_ped[i]->Branch("sigma",&sigma,"sigma/F");
+    }
 
     TCanvas* xcan=new TCanvas("xcan","xcan",800,900);
     TCanvas* ycan=new TCanvas("ycan","ycan",800,900);
@@ -3405,6 +3435,8 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     */
     FILE* fp_mip=fopen(Form("%s/mips.csv",outDir),"w");
     fprintf(fp_mip,"channel,xpos,xneg,ypos,yneg\n");
+    FILE* fp_mip2=fopen(Form("%s/mips_2.csv",outDir),"w");
+    fprintf(fp_mip2,"channel,xpos,xneg,ypos,yneg\n");
 
     TH1F *hxpos8[41],*hxpos5[41],*hxneg8[41],*hxneg5[41];
     TH1F *hypos8[41],*hypos5[41],*hyneg8[41],*hyneg5[41];
@@ -3412,6 +3444,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     float mpv,fwhm;
     for(int ch_id=0;ch_id<41;ch_id++){
         fprintf(fp_mip,"%d,",ch_id+1);
+        fprintf(fp_mip2,"%d,",ch_id+1);
 
         hxpos8[ch_id]=(TH1F*)file->Get(Form("xpos_%d",id8[ch_id]+1));
         hxpos8[ch_id]->Rebin(10);
@@ -3421,12 +3454,21 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         hxpos8[ch_id]->Draw();
         ffit->Draw("lsame");
         fprintf(fp_mip,"%.2f,",(mpv-xpos_mean[id8[ch_id]]));
+        ffit=pedfit(hxpos8[ch_id],xpos_mean[id8[ch_id]],xpos_sigma[id8[ch_id]],ped,sigma);
+        ffit->Draw("lsame");
+         fprintf(fp_mip2,"%.2f,",(mpv-ped));
+         channel=id8[ch_id]+1;
+         tree_ped[0]->Fill();
 
         hxpos5[ch_id]=(TH1F*)file->Get(Form("xpos_%d",id5[ch_id]+1));
         hxpos5[ch_id]->Rebin(10);
         hxpos5[ch_id]->SetTitle(Form("X_layer,Strip_%d,pos_dy5",ch_id+1));
+        ffit=pedfit(hxpos5[ch_id],xpos_mean[id5[ch_id]],xpos_sigma[id5[ch_id]],ped,sigma);
+        channel=id5[ch_id]+1;
+        tree_ped[0]->Fill();
         xcan->cd(2);
         hxpos5[ch_id]->Draw();
+        ffit->Draw("lsame");
 
         hxneg8[ch_id]=(TH1F*)file->Get(Form("xneg_%d",id8[40-ch_id]+1));
         hxneg8[ch_id]->Rebin(10);
@@ -3436,12 +3478,21 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         hxneg8[ch_id]->Draw();
         ffit->Draw("lsame");
         fprintf(fp_mip,"%.2f,",(mpv-xneg_mean[id8[40-ch_id]]));
+        ffit=pedfit(hxneg8[ch_id],xneg_mean[id8[40-ch_id]],xneg_sigma[id8[40-ch_id]],ped,sigma);
+        ffit->Draw("lsame");
+         fprintf(fp_mip2,"%.2f,",(mpv-ped));
+         channel=id8[40-ch_id]+1;
+         tree_ped[1]->Fill();
 
         hxneg5[ch_id]=(TH1F*)file->Get(Form("xneg_%d",id5[40-ch_id]+1));
         hxneg5[ch_id]->Rebin(10);
         hxneg5[ch_id]->SetTitle(Form("X_layer,Strip_%d,neg_dy5",ch_id+1));
+        ffit=pedfit(hxneg5[ch_id],xneg_mean[id5[40-ch_id]],xneg_sigma[id5[40-ch_id]],ped,sigma);
+        channel=id5[40-ch_id]+1;
+        tree_ped[1]->Fill();
         xcan->cd(4);
         hxneg5[ch_id]->Draw();
+        ffit->Draw("lsame");
         xcan->Print(Form("%s/xmips.pdf",outDir));
 
         hypos8[ch_id]=(TH1F*)file->Get(Form("ypos_%d",id8[40-ch_id]+1));
@@ -3452,12 +3503,21 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         hypos8[ch_id]->Draw();
         ffit->Draw("lsame");
         fprintf(fp_mip,"%.2f,",(mpv-ypos_mean[id8[40-ch_id]]));
+        ffit=pedfit(hypos8[ch_id],ypos_mean[id8[40-ch_id]],ypos_sigma[id8[40-ch_id]],ped,sigma);
+        ffit->Draw("lsame");
+         fprintf(fp_mip2,"%.2f,",(mpv-ped));
+         channel=id8[40-ch_id]+1;
+         tree_ped[2]->Fill();
 
         hypos5[ch_id]=(TH1F*)file->Get(Form("ypos_%d",id5[40-ch_id]+1));
         hypos5[ch_id]->Rebin(10);
         hypos5[ch_id]->SetTitle(Form("Y_layer,Strip_%d,pos_dy5",ch_id+1));
+       ffit= pedfit(hypos5[ch_id],ypos_mean[id5[40-ch_id]],ypos_sigma[id5[40-ch_id]],ped,sigma);
+        channel=id5[40-ch_id]+1;
+        tree_ped[2]->Fill();
         ycan->cd(2);
         hypos5[ch_id]->Draw();
+        ffit->Draw("lsame");
 
         hyneg8[ch_id]=(TH1F*)file->Get(Form("yneg_%d",id8[ch_id]+1));
         hyneg8[ch_id]->Rebin(10);
@@ -3467,12 +3527,21 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         hyneg8[ch_id]->Draw();
         ffit->Draw("lsame");
         fprintf(fp_mip,"%.2f\n",(mpv-yneg_mean[id8[ch_id]]));
+        ffit=pedfit(hyneg8[ch_id],yneg_mean[id8[ch_id]],yneg_sigma[id8[ch_id]],ped,sigma);
+        ffit->Draw("lsame");
+         fprintf(fp_mip2,"%.2f\n",(mpv-ped));
+         channel=id8[ch_id]+1;
+         tree_ped[3]->Fill();
 
         hyneg5[ch_id]=(TH1F*)file->Get(Form("yneg_%d",id5[ch_id]+1));
         hyneg5[ch_id]->Rebin(10);
         hyneg5[ch_id]->SetTitle(Form("Y_layer,Strip_%d,neg_dy5",ch_id+1));
+        ffit=pedfit(hyneg5[ch_id],yneg_mean[id5[ch_id]],yneg_sigma[id5[ch_id]],ped,sigma);
+        channel=id5[ch_id]+1;
+        tree_ped[3]->Fill();
         ycan->cd(4);
         hyneg5[ch_id]->Draw();
+        ffit->Draw("lsame");
         ycan->Print(Form("%s/ymips.pdf",outDir));
     }
 
@@ -3492,12 +3561,18 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         hypos8[i]->Write(0,TObject::kOverwrite);
     }
 
+    file_ped->cd();
+    for(int i=0;i<4;i++){
+        tree_ped[i]->Write();
+    }
+    delete file_ped;
     delete file_out;
     delete xcan;
     delete ycan;
     delete file;
 
     fclose(fp_mip);
+    fclose(fp_mip2);
 
     return 0;
 }

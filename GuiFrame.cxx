@@ -2548,6 +2548,7 @@ void GuiFrame::OnSciAnalyze()
     //---ref dir---
     TString refDirName,refBaseName;
     TString prefix;
+    TString newped_filename;
     //---analyze--
     FILE* fp;
     switch (analyze_type) {
@@ -2603,9 +2604,12 @@ void GuiFrame::OnSciAnalyze()
         fprintf(fp,"\tOutput Log file(this file): mips.log\n");
         fprintf(fp,"\tOutput root file: %s\n",outputBaseName.Data());
         draw_channels(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
-        draw_mip(input_sci_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
-        draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
-        draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+        newped_filename= outputDirName;
+        newped_filename.Append("/new_ped.root");
+        draw_relp(newped_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
+        //draw_mip(input_sci_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
+        //draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
+        //draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
         break;
     default:
         break;
