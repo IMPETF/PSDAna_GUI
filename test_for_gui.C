@@ -1986,7 +1986,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      can->Print(Form("%s/%s.pdf[",outDir,outfile));
      for(int i=0;i<90;i++){
          tree_out->GetEntry(i);
-         gxpos[i]=new TGraph(14,calib_voltage,xpos_mean);
+         gxpos[i]=new TGraph(nfound,calib_voltage,xpos_mean);
          gxpos[i]->SetNameTitle(Form("gxpos_%d",i+1),Form("gxpos_%d",i+1));
          ffit=calibration_linearfit(gxpos[i],xpos_INL[i],par);
          fprintf(fp,"%d,%.5f,%.2f,%.2f,,",i+1,xpos_INL[i],par[0],par[1]);
@@ -1994,7 +1994,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gxpos[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gxneg[i]=new TGraph(14,calib_voltage,xneg_mean);
+         gxneg[i]=new TGraph(nfound,calib_voltage,xneg_mean);
          gxneg[i]->SetNameTitle(Form("gxneg_%d",i+1),Form("gxneg_%d",i+1));
          ffit=calibration_linearfit(gxneg[i],xneg_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f,,",xneg_INL[i],par[0],par[1]);
@@ -2002,7 +2002,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gxneg[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gypos[i]=new TGraph(14,calib_voltage,ypos_mean);
+         gypos[i]=new TGraph(nfound,calib_voltage,ypos_mean);
          gypos[i]->SetNameTitle(Form("gypos_%d",i+1),Form("gypos_%d",i+1));
          ffit=calibration_linearfit(gypos[i],ypos_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f,,",ypos_INL[i],par[0],par[1]);
@@ -2010,7 +2010,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gypos[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gyneg[i]=new TGraph(14,calib_voltage,yneg_mean);
+         gyneg[i]=new TGraph(nfound,calib_voltage,yneg_mean);
          gyneg[i]->SetNameTitle(Form("gyneg_%d",i+1),Form("gyneg_%d",i+1));
          ffit=calibration_linearfit(gyneg[i],yneg_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f\n",yneg_INL[i],par[0],par[1]);
