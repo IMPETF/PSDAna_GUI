@@ -2607,9 +2607,9 @@ void GuiFrame::OnSciAnalyze()
         newped_filename= outputDirName;
         newped_filename.Append("/new_ped.root");
         draw_relp(newped_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
-        //draw_mip(input_sci_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
-        //draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
-        //draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+        draw_mip(input_sci_filename.Data(),ref_sci_filename.Data(),outputDirName.Data(),outputBaseName.Data());
+        draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
+        draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
         break;
     default:
         break;

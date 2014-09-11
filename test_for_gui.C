@@ -3440,6 +3440,28 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
 
     TH1F *hxpos8[41],*hxpos5[41],*hxneg8[41],*hxneg5[41];
     TH1F *hypos8[41],*hypos5[41],*hyneg8[41],*hyneg5[41];
+    /*
+    TTree* tree_in=(TTree*)file->Get("PSD");
+    Int_t begin=130001;
+    for(int ch_id=0;ch_id<41;ch_id++){
+        hxpos8[41]=new TH1F(Form("xpos_%d_dy8",ch_id+1),Form("xpos_%d_dy8",ch_id+1),3000,100,3100);
+        tree_in->Project(Form("xpos_%d_dy8",ch_id+1),Form("xpos[%d]",id8[ch_id]),"","",1000000000,begin);
+        hxpos5[41]=new TH1F(Form("xpos_%d_dy5",ch_id+1),Form("xpos_%d_dy5",ch_id+1),800,100,900);
+        tree_in->Project(Form("xpos_%d_dy5",ch_id+1),Form("xpos[%d]",id5[ch_id]),"","",1000000000,begin);
+        hxneg8[41]=new TH1F(Form("xneg_%d_dy8",ch_id+1),Form("xneg_%d_dy8",ch_id+1),3000,100,3100);
+        tree_in->Project(Form("xneg_%d_dy8",ch_id+1),Form("xneg[%d]",id8[40-ch_id]),"","",1000000000,begin);
+        hxneg5[41]=new TH1F(Form("xneg_%d_dy5",ch_id+1),Form("xneg_%d_dy5",ch_id+1),800,100,900);
+        tree_in->Project(Form("xneg_%d_dy5",ch_id+1),Form("xneg[%d]",id5[40-ch_id]),"","",1000000000,begin);
+        hypos8[41]=new TH1F(Form("ypos_%d_dy8",ch_id+1),Form("ypos_%d_dy8",ch_id+1),3000,100,3100);
+        tree_in->Project(Form("ypos_%d_dy8",ch_id+1),Form("ypos[%d]",id8[40-ch_id]),"","",1000000000,begin);
+        hypos5[41]=new TH1F(Form("ypos_%d_dy5",ch_id+1),Form("ypos_%d_dy5",ch_id+1),800,100,900);
+        tree_in->Project(Form("ypos_%d_dy5",ch_id+1),Form("ypos[%d]",id5[40-ch_id]),"","",1000000000,begin);
+        hyneg8[41]=new TH1F(Form("yneg_%d_dy8",ch_id+1),Form("yneg_%d_dy8",ch_id+1),3000,100,3100);
+        tree_in->Project(Form("yneg_%d_dy8",ch_id+1),Form("yneg[%d]",id8[ch_id]),"","",1000000000,begin);
+        hyneg5[41]=new TH1F(Form("yneg_%d_dy5",ch_id+1),Form("yneg_%d_dy5",ch_id+1),800,100,900);
+        tree_in->Project(Form("yneg_%d_dy5",ch_id+1),Form("yneg[%d]",id5[ch_id]),"","",1000000000,begin);
+    }
+    */
     TF1* ffit;
     float mpv,fwhm;
     for(int ch_id=0;ch_id<41;ch_id++){

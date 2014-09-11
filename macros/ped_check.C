@@ -1,3 +1,6 @@
+/*This macro is used to check the pedestal long-time consistency.*/
+/*Mainly used in PSD environment-testing.                        */
+
 #include "TFile.h"
 #include "TTree.h"
 #include "TSystem.h"
