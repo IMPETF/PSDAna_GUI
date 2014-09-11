@@ -1868,10 +1868,10 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          can_fit->cd(1);
          hxpos_new=(TH1F*)hxpos[i]->Rebin(10,"hxpos_new");
          xpos_nfound[i]=s->Search(hxpos_new);
-         if(xpos_nfound[i] !=15 ){
+         /*if(xpos_nfound[i] !=15 ){
              //printf("error! not 15 peaks(hxpos[%d],nfound=%d)\n",i,xpos_nfound[i]);
              //exit(EXIT_FAILURE);
-         }
+         }*/
          xpos_tmp=s->GetPositionX();
          for(int j=0;j<xpos_nfound[i];j++){
              xpos_mean[j]=xpos_tmp[j];
@@ -1891,10 +1891,10 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          can_fit->cd(2);
          hxneg_new=(TH1F*)hxneg[i]->Rebin(10,"hxneg_new");
          xneg_nfound[i]=s->Search(hxneg_new);
-         if(xneg_nfound[i] !=15 ){
+         /*if(xneg_nfound[i] !=15 ){
              //printf("error! not 15 peaks(hxneg[%d],nfound=%d)\n",i,xneg_nfound[i]);
              //exit(EXIT_FAILURE);
-         }
+         }*/
          xneg_tmp=s->GetPositionX();
          for(int j=0;j<xneg_nfound[i];j++){
              xneg_mean[j]=xneg_tmp[j];
@@ -1914,10 +1914,10 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          can_fit->cd(3);
          hypos_new=(TH1F*)hypos[i]->Rebin(10,"hypos_new");
          ypos_nfound[i]=s->Search(hypos_new);
-         if(ypos_nfound[i] !=15 ){
+         /*if(ypos_nfound[i] !=15 ){
              //printf("error! not 15 peaks(hypos[%d],nfound=%d)\n",i,ypos_nfound[i]);
              //exit(EXIT_FAILURE);
-         }
+         }*/
          ypos_tmp=s->GetPositionX();
          for(int j=0;j<ypos_nfound[i];j++){
              ypos_mean[j]=ypos_tmp[j];
@@ -1936,10 +1936,10 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          can_fit->cd(4);
          hyneg_new=(TH1F*)hyneg[i]->Rebin(10,"hyneg_new");
          yneg_nfound[i]=s->Search(hyneg_new);
-         if(yneg_nfound[i] !=15 ){
+         /*if(yneg_nfound[i] !=15 ){
              //printf("error! not 15 peaks(hyneg[%d],nfound=%d)\n",i,yneg_nfound[i]);
              //exit(EXIT_FAILURE);
-         }
+         }*/
          yneg_tmp=s->GetPositionX();
          for(int j=0;j<yneg_nfound[i];j++){
              yneg_mean[j]=yneg_tmp[j];
