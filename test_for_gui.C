@@ -1858,7 +1858,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      TSpectrum *s=new TSpectrum(18);
      TF1* ffit=0;
      TH1F *hxpos_new,*hxneg_new,*hypos_new,*hyneg_new;
-     int nfound;
+     int xpos_nfound[90],xneg_nfound[90],ypos_nfound[90],yneg_nfound[90];
      Float_t sigma=15.0;
 
      TCanvas* can_fit=new TCanvas("can_fit","can_fit",1000,1000);
@@ -1867,17 +1867,17 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      for(int i=0;i<90;i++){
          can_fit->cd(1);
          hxpos_new=(TH1F*)hxpos[i]->Rebin(10,"hxpos_new");
-         nfound=s->Search(hxpos_new);
-         if(nfound !=15 ){
-             printf("error! not 15 peaks(hxpos[%d],nfound=%d)\n",i,nfound);
+         xpos_nfound[i]=s->Search(hxpos_new);
+         if(xpos_nfound[i] !=15 ){
+             //printf("error! not 15 peaks(hxpos[%d],nfound=%d)\n",i,xpos_nfound[i]);
              //exit(EXIT_FAILURE);
          }
          xpos_tmp=s->GetPositionX();
-         for(int j=0;j<nfound;j++){
+         for(int j=0;j<xpos_nfound[i];j++){
              xpos_mean[j]=xpos_tmp[j];
          }
-         sorting(xpos_mean,nfound);
-         for(int j=0;j<nfound;j++){
+         sorting(xpos_mean,xpos_nfound[i]);
+         for(int j=0;j<xpos_nfound[i];j++){
              //xpos_mean[j]=range_tmp[j];
              hxpos[i]->Fit("gaus","q0","",xpos_mean[j]-3*sigma,xpos_mean[j]+3*sigma);
              ffit=(TF1*)hxpos[i]->GetFunction("gaus");
@@ -1890,17 +1890,17 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          //s=new TSpectrum(15);
          can_fit->cd(2);
          hxneg_new=(TH1F*)hxneg[i]->Rebin(10,"hxneg_new");
-         nfound=s->Search(hxneg_new);
-         if(nfound !=15 ){
-             printf("error! not 15 peaks(hxneg[%d],nfound=%d)\n",i,nfound);
+         xneg_nfound[i]=s->Search(hxneg_new);
+         if(xneg_nfound[i] !=15 ){
+             //printf("error! not 15 peaks(hxneg[%d],nfound=%d)\n",i,xneg_nfound[i]);
              //exit(EXIT_FAILURE);
          }
          xneg_tmp=s->GetPositionX();
-         for(int j=0;j<nfound;j++){
+         for(int j=0;j<xneg_nfound[i];j++){
              xneg_mean[j]=xneg_tmp[j];
          }
-         sorting(xneg_mean,nfound);
-         for(int j=0;j<nfound;j++){
+         sorting(xneg_mean,xneg_nfound[i]);
+         for(int j=0;j<xneg_nfound[i];j++){
              //xneg_mean[j]=range_tmp[j];
              hxneg[i]->Fit("gaus","q0","",xneg_mean[j]-3*sigma,xneg_mean[j]+3*sigma);
              ffit=(TF1*)hxneg[i]->GetFunction("gaus");
@@ -1913,17 +1913,17 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
         // s=new TSpectrum(15);
          can_fit->cd(3);
          hypos_new=(TH1F*)hypos[i]->Rebin(10,"hypos_new");
-         nfound=s->Search(hypos_new);
-         if(nfound !=15 ){
-             printf("error! not 15 peaks(hypos[%d],nfound=%d)\n",i,nfound);
+         ypos_nfound[i]=s->Search(hypos_new);
+         if(ypos_nfound[i] !=15 ){
+             //printf("error! not 15 peaks(hypos[%d],nfound=%d)\n",i,ypos_nfound[i]);
              //exit(EXIT_FAILURE);
          }
          ypos_tmp=s->GetPositionX();
-         for(int j=0;j<nfound;j++){
+         for(int j=0;j<ypos_nfound[i];j++){
              ypos_mean[j]=ypos_tmp[j];
          }
-         sorting(ypos_mean,nfound);
-         for(int j=0;j<nfound;j++){
+         sorting(ypos_mean,ypos_nfound[i]);
+         for(int j=0;j<ypos_nfound[i];j++){
              //ypos_mean[j]=range_tmp[j];
              hypos[i]->Fit("gaus","q0","",ypos_mean[j]-3*sigma,ypos_mean[j]+3*sigma);
              ffit=(TF1*)hypos[i]->GetFunction("gaus");
@@ -1935,17 +1935,17 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
 
          can_fit->cd(4);
          hyneg_new=(TH1F*)hyneg[i]->Rebin(10,"hyneg_new");
-         nfound=s->Search(hyneg_new);
-         if(nfound !=15 ){
-             printf("error! not 15 peaks(hyneg[%d],nfound=%d)\n",i,nfound);
+         yneg_nfound[i]=s->Search(hyneg_new);
+         if(yneg_nfound[i] !=15 ){
+             //printf("error! not 15 peaks(hyneg[%d],nfound=%d)\n",i,yneg_nfound[i]);
              //exit(EXIT_FAILURE);
          }
          yneg_tmp=s->GetPositionX();
-         for(int j=0;j<nfound;j++){
+         for(int j=0;j<yneg_nfound[i];j++){
              yneg_mean[j]=yneg_tmp[j];
          }
-         sorting(yneg_mean,nfound);
-         for(int j=0;j<nfound;j++){
+         sorting(yneg_mean,yneg_nfound[i]);
+         for(int j=0;j<yneg_nfound[i];j++){
              //yneg_mean[j]=range_tmp[j];
              hyneg[i]->Fit("gaus","q0","",yneg_mean[j]-3*sigma,yneg_mean[j]+3*sigma);
              ffit=(TF1*)hyneg[i]->GetFunction("gaus");
@@ -1986,7 +1986,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      can->Print(Form("%s/%s.pdf[",outDir,outfile));
      for(int i=0;i<90;i++){
          tree_out->GetEntry(i);
-         gxpos[i]=new TGraph(nfound,calib_voltage,xpos_mean);
+         gxpos[i]=new TGraph(xpos_nfound[i],calib_voltage,xpos_mean);
          gxpos[i]->SetNameTitle(Form("gxpos_%d",i+1),Form("gxpos_%d",i+1));
          ffit=calibration_linearfit(gxpos[i],xpos_INL[i],par);
          fprintf(fp,"%d,%.5f,%.2f,%.2f,,",i+1,xpos_INL[i],par[0],par[1]);
@@ -1994,7 +1994,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gxpos[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gxneg[i]=new TGraph(nfound,calib_voltage,xneg_mean);
+         gxneg[i]=new TGraph(xneg_nfound[i],calib_voltage,xneg_mean);
          gxneg[i]->SetNameTitle(Form("gxneg_%d",i+1),Form("gxneg_%d",i+1));
          ffit=calibration_linearfit(gxneg[i],xneg_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f,,",xneg_INL[i],par[0],par[1]);
@@ -2002,7 +2002,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gxneg[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gypos[i]=new TGraph(nfound,calib_voltage,ypos_mean);
+         gypos[i]=new TGraph(ypos_nfound[i],calib_voltage,ypos_mean);
          gypos[i]->SetNameTitle(Form("gypos_%d",i+1),Form("gypos_%d",i+1));
          ffit=calibration_linearfit(gypos[i],ypos_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f,,",ypos_INL[i],par[0],par[1]);
@@ -2010,7 +2010,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          gypos[i]->Draw("A*");
          ffit->Draw("lsame");
 
-         gyneg[i]=new TGraph(nfound,calib_voltage,yneg_mean);
+         gyneg[i]=new TGraph(yneg_nfound[i],calib_voltage,yneg_mean);
          gyneg[i]->SetNameTitle(Form("gyneg_%d",i+1),Form("gyneg_%d",i+1));
          ffit=calibration_linearfit(gyneg[i],yneg_INL[i],par);
          fprintf(fp,"%.5f,%.2f,%.2f\n",yneg_INL[i],par[0],par[1]);
