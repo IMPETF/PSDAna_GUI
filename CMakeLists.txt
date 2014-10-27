@@ -127,9 +127,13 @@ set(TOTAL_SOURCES ${PRIMARY_SOURCES} ${ROOT_DICT_SOURCES})
 add_executable(PSDAna_GUI ${TOTAL_SOURCES})
 target_link_libraries(PSDAna_GUI ${ROOT_LIBRARIES})
 
+#
+file(COPY "config/calib.config" DESTINATION ${PROJECT_BINARY_DIR})
+
 #install the targets
 install(TARGETS PSDAna_GUI DESTINATION bin)
 install(DIRECTORY documents/ DESTINATION doc)
+install(DIRECTORY config/ DESTINATION bin)
 
 #build a installer package
 include(InstallRequiredSystemLibraries)
