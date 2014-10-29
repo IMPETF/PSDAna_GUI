@@ -2000,8 +2000,9 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      //--
      Int_t max_datapoints;
      for(int i=0;i<calib_datapoints;i++){
-         if(calib_voltage[calib_datapoints-1-i]<1100){
+         if(calib_voltage[calib_datapoints-1-i]<=1100){
              max_datapoints=calib_datapoints-i;
+             break;
          }
      }
      TCanvas* can=new TCanvas("can","can",1000,1000);
