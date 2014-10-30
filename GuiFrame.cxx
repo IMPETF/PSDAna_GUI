@@ -117,6 +117,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
         return;
     }
     gGuiFrame = this;
+    bin_dir=gSystem->WorkingDirectory();
     /////////////////////////////////
     SetCleanup(kDeepCleanup);
     Connect("CloseWindow()", "GuiFrame", this, "CloseWindow()");
@@ -2535,6 +2536,7 @@ void GuiFrame::OnRefSciData()
 void GuiFrame::OnSciAnalyze()
 {
     ShowText("Analyzing Begin.");
+    TString calib_configfile;
     //---input dir---
     TString inputDirName,inputBaseName;
     inputBaseName=gSystem->BaseName(input_sci_filename.Data());
@@ -2549,6 +2551,7 @@ void GuiFrame::OnSciAnalyze()
     TString refDirName,refBaseName;
     TString prefix;
     TString newped_filename;
+
     //---analyze--
     FILE* fp;
     switch (analyze_type) {
@@ -2579,6 +2582,7 @@ void GuiFrame::OnSciAnalyze()
         //ShowText("calibration");
         fp=fopen(Form("%s/calibration.log",outputDirName.Data()),"w");
         fprintf(fp,"Calibration Analyze Log Info:\n");
+        fprintf(fp,"Working dir: %s\n",bin_dir.Data());
         fprintf(fp,"\tRaw root file dir: %s\n",inputDirName.Data());
         fprintf(fp,"\tRaw root file name: %s\n",inputBaseName.Data());
         fprintf(fp,"Analyze Result:\n");
@@ -2586,7 +2590,8 @@ void GuiFrame::OnSciAnalyze()
         fprintf(fp,"\tOutput Log file(this file): calibration.log\n");
         fprintf(fp,"\tOutput root file: %s\n",outputBaseName.Data());
         outputBaseName.ReplaceAll(".root","");
-        fit_calibration(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+        calib_configfile= bin_dir+"/calib.config";
+        fit_calibration(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data(),calib_configfile.Data());
         break;
     case kB_mips:
         //ShowText("mips");

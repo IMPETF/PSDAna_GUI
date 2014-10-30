@@ -274,6 +274,7 @@ protected:
     GuiFrame(const GuiFrame &onf);
     GuiFrame& operator=(const GuiFrame &onf);
 
+    TString bin_dir;
     TString input_sci_filename;
     TString output_sci_filename;
     TString ref_sci_filename;

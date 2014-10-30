@@ -1785,7 +1785,7 @@ int sorting(float *a,const int nfound)
     return 0;
 }
 
-TF1 *calibration_linearfit(TGraph* g,float &INL,float *par)
+TF1 *calibration_linearfit(TGraph* g,float &INL,float *par,float* calib_voltage,Int_t datapoints)
 {
     char FunName[100];
     sprintf(FunName,"ffit_%s",g->GetName());
@@ -1797,23 +1797,23 @@ TF1 *calibration_linearfit(TGraph* g,float &INL,float *par)
     ffit=(TF1*)g->GetFunction("pol1");
     ffit->SetName(FunName);
 
-    float calib_voltage[15]={100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500};
+    //float calib_voltage[15]={100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500};
     double* adc_value;
     adc_value=g->GetY();
     par[0]=ffit->GetParameter(0);
     par[1]=ffit->GetParameter(1);
     float delta[15];
-    for(int i=0;i<12;i++){
+    for(int i=0;i<datapoints;i++){
         //delta[i]=TMath::Abs(ffit->Eval(calib_voltage[i]) - adc_value[i]);
         delta[i]=TMath::Abs(par[0]+par[1]*calib_voltage[i]-adc_value[i]);
     }
 
-    INL=TMath::MaxElement(12,delta)/12000.0;
+    INL=TMath::MaxElement(datapoints,delta)/15000;
 
     return ffit;
 }
 
-int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="calib_result")
+int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="calib_result",const char* config_file="calib.config")
 {
     gStyle->SetOptStat(0);
     const int id_PMT[82]={0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,
@@ -1977,10 +1977,34 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
      TGraph* gxneg[90];
      TGraph* gypos[90];
      TGraph* gyneg[90];
-     Float_t calib_voltage[15]={100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500};
+     //Float_t calib_voltage[10]={100,200,400,500,700,800,1000,1100,1300,1500};
+     Float_t calib_voltage[20];
+     Int_t calib_datapoints;
      Float_t xpos_INL[90],xneg_INL[90],ypos_INL[90],yneg_INL[90];
      Float_t par[3];
 
+     //--read calib.config
+     FILE* fp_calib=fopen(config_file,"r");
+     if(!fp_calib){
+         printf("can't open calibration config file\n");
+         return -1;
+     }
+     fscanf(fp_calib,"datapoints: %d\n",&calib_datapoints);
+     printf("working dir: %s\n",gSystem->WorkingDirectory());
+     printf("datapoints: %d\n",calib_datapoints);
+     for(int i=0;i<calib_datapoints;i++){
+         fscanf(fp_calib,"%f\n",calib_voltage+i);
+         printf("%f\n",calib_voltage[i]);
+     }
+     fclose(fp_calib);
+     //--
+     Int_t max_datapoints;
+     for(int i=0;i<calib_datapoints;i++){
+         if(calib_voltage[calib_datapoints-1-i]<=1100){
+             max_datapoints=calib_datapoints-i;
+             break;
+         }
+     }
      TCanvas* can=new TCanvas("can","can",1000,1000);
      can->Divide(2,2);
      can->Print(Form("%s/%s.pdf[",outDir,outfile));
@@ -1988,7 +2012,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
          tree_out->GetEntry(i);
          gxpos[i]=new TGraph(xpos_nfound[i],calib_voltage,xpos_mean);
          gxpos[i]->SetNameTitle(Form("gxpos_%d",i+1),Form("gxpos_%d",i+1));
-         ffit=calibration_linearfit(gxpos[i],xpos_INL[i],par);
+         ffit=calibration_linearfit(gxpos[i],xpos_INL[i],par,calib_voltage,max_datapoints);
          fprintf(fp,"%d,%.5f,%.2f,%.2f,,",i+1,xpos_INL[i],par[0],par[1]);
          can->cd(1);
          gxpos[i]->Draw("A*");
@@ -1996,7 +2020,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
 
          gxneg[i]=new TGraph(xneg_nfound[i],calib_voltage,xneg_mean);
          gxneg[i]->SetNameTitle(Form("gxneg_%d",i+1),Form("gxneg_%d",i+1));
-         ffit=calibration_linearfit(gxneg[i],xneg_INL[i],par);
+         ffit=calibration_linearfit(gxneg[i],xneg_INL[i],par,calib_voltage,max_datapoints);
          fprintf(fp,"%.5f,%.2f,%.2f,,",xneg_INL[i],par[0],par[1]);
          can->cd(2);
          gxneg[i]->Draw("A*");
@@ -2004,7 +2028,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
 
          gypos[i]=new TGraph(ypos_nfound[i],calib_voltage,ypos_mean);
          gypos[i]->SetNameTitle(Form("gypos_%d",i+1),Form("gypos_%d",i+1));
-         ffit=calibration_linearfit(gypos[i],ypos_INL[i],par);
+         ffit=calibration_linearfit(gypos[i],ypos_INL[i],par,calib_voltage,max_datapoints);
          fprintf(fp,"%.5f,%.2f,%.2f,,",ypos_INL[i],par[0],par[1]);
          can->cd(3);
          gypos[i]->Draw("A*");
@@ -2012,7 +2036,7 @@ int fit_calibration(const Char_t* parentDir,const Char_t* infile,const Char_t* o
 
          gyneg[i]=new TGraph(yneg_nfound[i],calib_voltage,yneg_mean);
          gyneg[i]->SetNameTitle(Form("gyneg_%d",i+1),Form("gyneg_%d",i+1));
-         ffit=calibration_linearfit(gyneg[i],yneg_INL[i],par);
+         ffit=calibration_linearfit(gyneg[i],yneg_INL[i],par,calib_voltage,max_datapoints);
          fprintf(fp,"%.5f,%.2f,%.2f\n",yneg_INL[i],par[0],par[1]);
          can->cd(4);
          gyneg[i]->Draw("A*");
