@@ -1693,7 +1693,7 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
                                 fprintf(fp,"\t\twarning: unmatched trigger_id in this packet\n");
                             }
                             check_triggerstatus(trigger_status,packet_num,true);
-                            check_statuscode(status_code,packet_num,true);
+                            check_statuscode(status_code,packet_num);
 
                             trigger_id_current=trigger_id[0];
                             if(trigger_id_before==0xFFF){
