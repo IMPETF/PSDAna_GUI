@@ -3457,8 +3457,8 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     FILE* fp_ypos=fopen(Form("%s/ypos_mip.csv",pardir),"w");
     FILE* fp_yneg=fopen(Form("%s/yneg_mip.csv",pardir),"w");
     */
-    FILE* fp_mip=fopen(Form("%s/mips.csv",outDir),"w");
-    fprintf(fp_mip,"channel,xpos,xneg,ypos,yneg\n");
+    //FILE* fp_mip=fopen(Form("%s/mips.csv",outDir),"w");
+    //fprintf(fp_mip,"channel,xpos,xneg,ypos,yneg\n");
     FILE* fp_mip2=fopen(Form("%s/mips_2.csv",outDir),"w");
     fprintf(fp_mip2,"channel,xpos,xneg,ypos,yneg\n");
 
@@ -3489,7 +3489,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     TF1* ffit;
     float mpv,fwhm;
     for(int ch_id=0;ch_id<41;ch_id++){
-        fprintf(fp_mip,"%d,",ch_id+1);
+        //fprintf(fp_mip,"%d,",ch_id+1);
         fprintf(fp_mip2,"%d,",ch_id+1);
 
         hxpos8[ch_id]=(TH1F*)file->Get(Form("xpos_%d",id8[ch_id]+1));
@@ -3499,7 +3499,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         xcan->cd(1);
         hxpos8[ch_id]->Draw();
         ffit->Draw("lsame");
-        fprintf(fp_mip,"%.2f,",(mpv-xpos_mean[id8[ch_id]]));
+        //fprintf(fp_mip,"%.2f,",(mpv-xpos_mean[id8[ch_id]]));
         ffit=pedfit(hxpos8[ch_id],xpos_mean[id8[ch_id]],xpos_sigma[id8[ch_id]],ped,sigma);
         ffit->Draw("lsame");
          fprintf(fp_mip2,"%.2f,",(mpv-ped));
@@ -3523,7 +3523,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         xcan->cd(3);
         hxneg8[ch_id]->Draw();
         ffit->Draw("lsame");
-        fprintf(fp_mip,"%.2f,",(mpv-xneg_mean[id8[40-ch_id]]));
+        //fprintf(fp_mip,"%.2f,",(mpv-xneg_mean[id8[40-ch_id]]));
         ffit=pedfit(hxneg8[ch_id],xneg_mean[id8[40-ch_id]],xneg_sigma[id8[40-ch_id]],ped,sigma);
         ffit->Draw("lsame");
          fprintf(fp_mip2,"%.2f,",(mpv-ped));
@@ -3548,7 +3548,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         ycan->cd(1);
         hypos8[ch_id]->Draw();
         ffit->Draw("lsame");
-        fprintf(fp_mip,"%.2f,",(mpv-ypos_mean[id8[40-ch_id]]));
+        //fprintf(fp_mip,"%.2f,",(mpv-ypos_mean[id8[40-ch_id]]));
         ffit=pedfit(hypos8[ch_id],ypos_mean[id8[40-ch_id]],ypos_sigma[id8[40-ch_id]],ped,sigma);
         ffit->Draw("lsame");
          fprintf(fp_mip2,"%.2f,",(mpv-ped));
@@ -3572,7 +3572,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
         ycan->cd(3);
         hyneg8[ch_id]->Draw();
         ffit->Draw("lsame");
-        fprintf(fp_mip,"%.2f\n",(mpv-yneg_mean[id8[ch_id]]));
+        //fprintf(fp_mip,"%.2f\n",(mpv-yneg_mean[id8[ch_id]]));
         ffit=pedfit(hyneg8[ch_id],yneg_mean[id8[ch_id]],yneg_sigma[id8[ch_id]],ped,sigma);
         ffit->Draw("lsame");
          fprintf(fp_mip2,"%.2f\n",(mpv-ped));
@@ -3617,7 +3617,7 @@ int draw_channels(const char* pardir,const char* filename,const char* outDir,con
     delete ycan;
     delete file;
 
-    fclose(fp_mip);
+    //fclose(fp_mip);
     fclose(fp_mip2);
 
     return 0;
