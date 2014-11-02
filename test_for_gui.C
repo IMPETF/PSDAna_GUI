@@ -26,6 +26,7 @@
 #include "TGaxis.h"
 #include "TAxis.h"
 #include "TPaletteAxis.h"
+#include "TProfile.h"
 
 Double_t langaufun(Double_t *x, Double_t *par) {
 
@@ -3356,12 +3357,12 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
 int draw_mapping(const char* pardir,const char* filename,const char* outDir,unsigned int max=600000)
 {
     int id8_pos[41]={0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
-    int id8_neg[41]={0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
+    int id8_neg[41]={66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,47,46,22,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0};
     int id5_pos[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
-    int id5_neg[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
+    int id5_neg[41]={88,87,86,85,84,83,82,81,80,79,78,77,76,75,74,73,72,71,69,68,45,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,24,23};
 	int id_empty[8]={2,21,25,44,48,67,70,89};
 	
-    TFile* file=new TFile(Form("%s/%s",pardir,filename));
+    TFile* file=new TFile(Form("%s/%s",pardir,filename),"update");
     TTree *tree_in=(TTree*)file->Get("PSD");
 
     int nevents=tree_in->GetEntries();
@@ -3376,7 +3377,14 @@ int draw_mapping(const char* pardir,const char* filename,const char* outDir,unsi
 
     TCanvas *canvans=new TCanvas("canvas","canvas",600,500);
     //TH2F *h8=new TH2F("h8","h8",500,0,5000,500,0,5000);
-    TH2F *h5=new TH2F("h5","h5",200,0,1000,3200,0,16000);
+    TH2F *h5_xpos=new TH2F("h5_xpos","h5_xpos",200,0,1000,3200,0,16000);
+    h5_xpos->GetXaxis()->SetTitle("Dy5");h5_xpos->GetYaxis()->SetTitle("Dy8");
+    TH2F *h5_xneg=new TH2F("h5_xneg","h5_xneg",200,0,1000,3200,0,16000);
+    h5_xneg->GetXaxis()->SetTitle("Dy5");h5_xneg->GetYaxis()->SetTitle("Dy8");
+    TH2F *h5_ypos=new TH2F("h5_ypos","h5_ypos",200,0,1000,3200,0,16000);
+    h5_ypos->GetXaxis()->SetTitle("Dy5");h5_ypos->GetYaxis()->SetTitle("Dy8");
+    TH2F *h5_yneg=new TH2F("h5_yneg","h5_yneg",200,0,1000,3200,0,16000);
+    h5_yneg->GetXaxis()->SetTitle("Dy5");h5_yneg->GetYaxis()->SetTitle("Dy8");
 /*
     canvans->Print(Form("%s/dy8_match.pdf[",pardir));
 
@@ -3392,23 +3400,207 @@ int draw_mapping(const char* pardir,const char* filename,const char* outDir,unsi
 */
     canvans->Print(Form("%s/dy5_match.pdf[",outDir));
     for(int i=0;i<41;i++){
-        h5->SetTitle(Form("X%d_pos",i+1));
-        tree_in->Draw(Form("xpos[%d]:xpos[%d] >> h5",id8_pos[i],id5_pos[i]),"","",maxentry);
+        h5_xpos->SetName(Form("hxpos_dy58_%d",i+1));
+        h5_xpos->SetTitle(Form("X%d_pos",i+1));
+        tree_in->Draw(Form("xpos[%d]:xpos[%d] >> hxpos_dy58_%d",id8_pos[i],id5_pos[i],i+1),"","",maxentry);
         canvans->Print(Form("%s/dy5_match.pdf",outDir));
-        h5->SetTitle(Form("X%d_neg",i+1));
-        tree_in->Draw(Form("xneg[%d]:xneg[%d] >> h5",id8_pos[40-i],id5_pos[40-i]),"","",maxentry);
+        h5_xpos->Write(0,TObject::kOverwrite);
+
+        h5_xneg->SetName(Form("hxneg_dy58_%d",i+1));
+        h5_xneg->SetTitle(Form("X%d_neg",i+1));
+        tree_in->Draw(Form("xneg[%d]:xneg[%d] >> hxneg_dy58_%d",id8_pos[40-i],id5_pos[40-i],i+1),"","",maxentry);
         canvans->Print(Form("%s/dy5_match.pdf",outDir));
-        h5->SetTitle(Form("Y%d_pos",i+1));
-        tree_in->Draw(Form("ypos[%d]:ypos[%d] >> h5",id8_pos[40-i],id5_pos[40-i]),"","",maxentry);
+        h5_xneg->Write(0,TObject::kOverwrite);
+
+        h5_ypos->SetName(Form("hypos_dy58_%d",i+1));
+        h5_ypos->SetTitle(Form("Y%d_pos",i+1));
+        tree_in->Draw(Form("ypos[%d]:ypos[%d] >> hypos_dy58_%d",id8_pos[40-i],id5_pos[40-i],i+1),"","",maxentry);
         canvans->Print(Form("%s/dy5_match.pdf",outDir));
-        h5->SetTitle(Form("Y%d_neg",i+1));
-        tree_in->Draw(Form("yneg[%d]:yneg[%d] >> h5",id8_pos[i],id5_pos[i]),"","",maxentry);
+        h5_ypos->Write(0,TObject::kOverwrite);
+
+        h5_yneg->SetName(Form("hyneg_dy58_%d",i+1));
+        h5_yneg->SetTitle(Form("Y%d_neg",i+1));
+        tree_in->Draw(Form("yneg[%d]:yneg[%d] >> hyneg_dy58_%d",id8_pos[i],id5_pos[i],i+1),"","",maxentry);
         canvans->Print(Form("%s/dy5_match.pdf",outDir));
+        h5_yneg->Write(0,TObject::kOverwrite);
     }
     canvans->Print(Form("%s/dy5_match.pdf]",outDir));
 
+
     delete canvans;
     delete file;
+
+    return 0;
+}
+
+TF1* linear_fit(TProfile* hprofile,Double_t *fitrange)
+{
+    char FunName[100];
+    sprintf(FunName,"Fitfcn_%s",hprofile->GetName());
+    TF1* ffitold=(TF1*)gROOT->GetListOfFunctions()->FindObject(FunName);
+    if(ffitold) delete ffitold;
+
+    TF1* ffit=new TF1(FunName,"pol1",fitrange[0],fitrange[1]);
+    hprofile->Fit(FunName,"R0");
+
+    return ffit;
+}
+
+int fit_dy58(const char* infile,const char* pedfile,const char* outdir,const char* outfile,int pedcut=5,float range=200.0)
+{
+    //--- pedestal ----------------
+    int id8[41]={0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
+    int id5[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
+
+    int channel;
+    float mean,sigma;
+    float xpedmean_dy8_pos[41],xpedmean_dy5_pos[41],xpedmean_dy8_neg[41],xpedmean_dy5_neg[41];
+    float ypedmean_dy8_pos[41],ypedmean_dy5_pos[41],ypedmean_dy8_neg[41],ypedmean_dy5_neg[41];
+    float xpedsigma_dy8_pos[41],xpedsigma_dy5_pos[41],xpedsigma_dy8_neg[41],xpedsigma_dy5_neg[41];
+    float ypedsigma_dy8_pos[41],ypedsigma_dy5_pos[41],ypedsigma_dy8_neg[41],ypedsigma_dy5_neg[41];
+    TFile *f_ped=new TFile(pedfile);
+
+    TTree *tree_ped=(TTree*)f_ped->Get("xpos_ped");
+    tree_ped->SetBranchAddress("channel",&channel);
+    tree_ped->SetBranchAddress("mean",&mean);
+    tree_ped->SetBranchAddress("sigma",&sigma);
+    tree_ped->BuildIndex("channel");
+    for(int i=0;i<41;i++){
+        tree_ped->GetEntryWithIndex(id8[i]+1);
+        xpedmean_dy8_pos[i]=mean;
+        xpedsigma_dy8_pos[i]=sigma;
+
+        tree_ped->GetEntryWithIndex(id5[i]+1);
+        xpedmean_dy5_pos[i]=mean;
+        xpedsigma_dy5_pos[i]=sigma;
+    }
+
+    tree_ped=(TTree*)f_ped->Get("xneg_ped");
+    tree_ped->SetBranchAddress("channel",&channel);
+    tree_ped->SetBranchAddress("mean",&mean);
+    tree_ped->SetBranchAddress("sigma",&sigma);
+    tree_ped->BuildIndex("channel");
+    for(int i=0;i<41;i++){
+        tree_ped->GetEntryWithIndex(id8[40-i]+1);
+        xpedmean_dy8_neg[i]=mean;
+        xpedsigma_dy8_neg[i]=sigma;
+
+        tree_ped->GetEntryWithIndex(id5[40-i]+1);
+        xpedmean_dy5_neg[i]=mean;
+        xpedsigma_dy5_neg[i]=sigma;
+    }
+
+    tree_ped=(TTree*)f_ped->Get("ypos_ped");
+    tree_ped->SetBranchAddress("channel",&channel);
+    tree_ped->SetBranchAddress("mean",&mean);
+    tree_ped->SetBranchAddress("sigma",&sigma);
+    tree_ped->BuildIndex("channel");
+    for(int i=0;i<41;i++){
+        tree_ped->GetEntryWithIndex(id8[40-i]+1);
+        ypedmean_dy8_pos[i]=mean;
+        ypedsigma_dy8_pos[i]=sigma;
+
+        tree_ped->GetEntryWithIndex(id5[40-i]+1);
+        ypedmean_dy5_pos[i]=mean;
+        ypedsigma_dy5_pos[i]=sigma;
+    }
+
+    tree_ped=(TTree*)f_ped->Get("yneg_ped");
+    tree_ped->SetBranchAddress("channel",&channel);
+    tree_ped->SetBranchAddress("mean",&mean);
+    tree_ped->SetBranchAddress("sigma",&sigma);
+    tree_ped->BuildIndex("channel");
+    for(int i=0;i<41;i++){
+        tree_ped->GetEntryWithIndex(id8[i]+1);
+        ypedmean_dy8_neg[i]=mean;
+        ypedsigma_dy8_neg[i]=sigma;
+
+        tree_ped->GetEntryWithIndex(id5[i]+1);
+        ypedmean_dy5_neg[i]=mean;
+        ypedsigma_dy5_neg[i]=sigma;
+    }
+    delete f_ped;
+
+    //----get profile of dy58,and fit---------------------------
+    Double_t fitrange[2];
+    TFile *f_in=new TFile(infile,"update");
+    TH1F* hdy58_dist=new TH1F("hdy58_dist","Dy58 Ratio Distribution",200,40.0,60.0);
+    TH2F* hdy58;
+    TProfile* hdy58_pfx;
+    TF1* lffit;
+    Float_t dy58_ratio;
+
+    FILE* fp=fopen(Form("%s/%s.txt",outdir,outfile),"w");
+    fprintf(fp,"dy58_ratio:\n");
+    fprintf(fp,"index\txpos\txneg\typos\tyneg\n");
+
+    TCanvas* can=new TCanvas("can_dy58_fit","can_dy58_fit",900,900);
+    can->Divide(2,2);
+    can->Print(Form("%s/%s.pdf[",outdir,outfile));
+
+    for(int i=0;i<41;i++){
+        fprintf(fp,"%d\t",i+1);
+
+        can->cd(1);
+        hdy58=(TH2F*)f_in->Get(Form("hxpos_dy58_%d",i+1));
+        hdy58_pfx=hdy58->ProfileX();
+        fitrange[0]=xpedmean_dy5_pos[i]+pedcut*xpedsigma_dy5_pos[i];
+        fitrange[1]=xpedmean_dy5_pos[i]+pedcut*xpedsigma_dy5_pos[i]+range;
+        lffit=linear_fit(hdy58_pfx,fitrange);
+        dy58_ratio=lffit->GetParameter(1);
+        fprintf(fp,"%.3f\t",dy58_ratio);
+        hdy58_dist->Fill(dy58_ratio);
+        lffit->SetLineColor(kRed);
+        hdy58->Draw();
+        lffit->Draw("same");
+
+        can->cd(2);
+        hdy58=(TH2F*)f_in->Get(Form("hxneg_dy58_%d",i+1));
+        hdy58_pfx=hdy58->ProfileX();
+        fitrange[0]=xpedmean_dy5_neg[i]+pedcut*xpedsigma_dy5_neg[i];
+        fitrange[1]=xpedmean_dy5_neg[i]+pedcut*xpedsigma_dy5_neg[i]+range;
+        lffit=linear_fit(hdy58_pfx,fitrange);
+        dy58_ratio=lffit->GetParameter(1);
+        fprintf(fp,"%.3f\t",dy58_ratio);
+        hdy58_dist->Fill(dy58_ratio);
+        lffit->SetLineColor(kRed);
+        hdy58->Draw();
+        lffit->Draw("same");
+
+        can->cd(3);
+        hdy58=(TH2F*)f_in->Get(Form("hypos_dy58_%d",i+1));
+        hdy58_pfx=hdy58->ProfileX();
+        fitrange[0]=ypedmean_dy5_pos[i]+pedcut*ypedsigma_dy5_pos[i];
+        fitrange[1]=ypedmean_dy5_pos[i]+pedcut*ypedsigma_dy5_pos[i]+range;
+        lffit=linear_fit(hdy58_pfx,fitrange);
+        dy58_ratio=lffit->GetParameter(1);
+        fprintf(fp,"%.3f\t",dy58_ratio);
+        hdy58_dist->Fill(dy58_ratio);
+        lffit->SetLineColor(kRed);
+        hdy58->Draw();
+        lffit->Draw("same");
+
+        can->cd(4);
+        hdy58=(TH2F*)f_in->Get(Form("hyneg_dy58_%d",i+1));
+        hdy58_pfx=hdy58->ProfileX();
+        fitrange[0]=ypedmean_dy5_neg[i]+pedcut*ypedsigma_dy5_neg[i];
+        fitrange[1]=ypedmean_dy5_neg[i]+pedcut*ypedsigma_dy5_neg[i]+range;
+        lffit=linear_fit(hdy58_pfx,fitrange);
+        dy58_ratio=lffit->GetParameter(1);
+        fprintf(fp,"%.3f\n",dy58_ratio);
+        hdy58_dist->Fill(dy58_ratio);
+        lffit->SetLineColor(kRed);
+        hdy58->Draw();
+        lffit->Draw("same");
+
+        can->Print(Form("%s/%s.pdf",outdir,outfile));
+    }
+    can->Print(Form("%s/%s.pdf]",outdir,outfile));
+
+    hdy58_dist->Write(0,TObject::kOverwrite);
+    fclose(fp);
+    delete f_in;
+    delete can;
 
     return 0;
 }
@@ -4044,3 +4236,127 @@ int analyze_calib(const char* date,const Char_t* parentDir,const Char_t* infile,
     return 0;
 }
 */
+
+
+//for 2014 ps beam_test
+void draw_hitnum(const char* mipfile,const char* pedfile,const char* outDir,const char* outName,const Int_t limit=5)
+{
+    gStyle->SetOptStat(0);
+
+    int id8[4][41]={{0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66},
+                   {66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,47,46,22,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0},
+                   {66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,47,46,22,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0},
+                   {0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66}};
+    int id5[4][41]={{23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88},
+                   {88,87,86,85,84,83,82,81,80,79,78,77,76,75,74,73,72,71,69,68,45,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,24,23},
+                   {88,87,86,85,84,83,82,81,80,79,78,77,76,75,74,73,72,71,69,68,45,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,24,23},
+                   {23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88}};
+
+    TString label[4]={"xpos","xneg","ypos","yneg"};
+    Float_t ped_mean[4][41],ped_sigma[4][41];
+    Float_t thresh[4][41];
+    Float_t ped_meanbuffer,ped_sigmabuffer;
+    TFile* fped=new TFile(pedfile);
+    TTree* tped=0;
+    TString tmpstr;
+    for(int fee_id=0;fee_id<4;fee_id++){
+        tmpstr=label[fee_id]+"_ped";
+        tped=(TTree*)fped->Get(tmpstr.Data());
+        tped->SetBranchAddress("mean",&ped_meanbuffer);
+        tped->SetBranchAddress("sigma",&ped_sigmabuffer);
+        tped->BuildIndex("channel");
+        for(int i=0;i<41;i++){
+            tped->GetEntryWithIndex(id8[fee_id][i]+1);
+            ped_mean[fee_id][i]=ped_meanbuffer;
+            ped_sigma[fee_id][i]=ped_sigmabuffer;
+            thresh[fee_id][i]=ped_meanbuffer+limit*ped_sigmabuffer;
+        }
+        delete tped;
+    }
+    delete fped;
+
+    Int_t xpos[90],xneg[90],ypos[90],yneg[90];
+    TFile* fmip=new TFile(mipfile);
+    TTree* tmip=(TTree*)fmip->Get("PSD");
+    tmip->SetBranchAddress("xpos",xpos);
+    tmip->SetBranchAddress("xneg",xneg);
+    tmip->SetBranchAddress("ypos",ypos);
+    tmip->SetBranchAddress("yneg",yneg);
+
+    TH1F *hhit_x=new TH1F("hhit_x","hhit_x",42,-0.5,41.5);
+    TH1F *hhit_y=new TH1F("hhit_y","hhit_y",42,-0.5,41.5);
+    TH2F *hpos_xy=new TH2F("hpos_xy","hpos_xy",41,0.5,41.5,41,0.5,41.5);
+
+    Int_t hitnum_x,hitnum_y;
+    Int_t hitstrip_x,hitstrip_y;
+    Float_t xmean_geo[41],ymean_geo[41];
+    Float_t xmean_alg[41],ymean_alg[41];
+    Float_t mipbuffer[4][41];
+    Int_t entries=tmip->GetEntries();
+    for(int i=0;i<entries;i++){
+        tmip->GetEntry(i);
+        hitnum_x=0;hitnum_y=0;
+        hitstrip_x=-1;hitstrip_y=-1;
+
+        //x
+        for(int j=0;j<41;j++){
+            mipbuffer[0][j]=xpos[id8[0][j]]-ped_mean[0][j];
+            mipbuffer[1][j]=xneg[id8[1][j]]-ped_mean[1][j];
+            if(mipbuffer[0][j]<0) mipbuffer[0][j]=0;
+            if(mipbuffer[1][j]<0) mipbuffer[1][j]=0;
+            xmean_alg[j]=(mipbuffer[0][j]+mipbuffer[1][j])/2;
+            xmean_geo[j]=TMath::Sqrt(mipbuffer[0][j]*mipbuffer[1][j]);
+            if(xpos[id8[0][j]]>thresh[0][j] && xneg[id8[1][j]]>thresh[1][j]){
+                hitnum_x++;
+            }
+        }
+        hhit_x->Fill(hitnum_x);
+        if(hitnum_x>=1){
+            hitstrip_x=TMath::LocMax(41,xmean_geo);
+        }
+        //y
+        for(int j=0;j<41;j++){
+            mipbuffer[2][j]=ypos[id8[2][j]]-ped_mean[2][j];
+            mipbuffer[3][j]=yneg[id8[3][j]]-ped_mean[3][j];
+            if(mipbuffer[2][j]<0) mipbuffer[2][j]=0;
+            if(mipbuffer[3][j]<0) mipbuffer[3][j]=0;
+            ymean_alg[j]=(mipbuffer[2][j]+mipbuffer[3][j])/2;
+            ymean_geo[j]=TMath::Sqrt(mipbuffer[2][j]*mipbuffer[3][j]);
+            if(ypos[id8[2][j]]>thresh[2][j] && yneg[id8[3][j]]>thresh[3][j]){
+                hitnum_y++;
+            }
+        }
+        hhit_y->Fill(hitnum_y);
+        if(hitnum_y>=1){
+            hitstrip_y=TMath::LocMax(41,ymean_geo);
+        }
+
+        //pos
+        if(hitstrip_x>-1 && hitstrip_y>-1){
+            hpos_xy->Fill(hitstrip_x+1,hitstrip_y+1);
+        }
+    }
+
+    TCanvas* can=new TCanvas("can","can",800,800);
+    can->Print(Form("%s/hit.pdf[",outDir));
+    can->Divide(2,2);
+    can->cd(1);
+    hhit_x->Draw();
+    can->cd(2);
+    hhit_y->Draw();
+    can->cd(3);
+    hpos_xy->Draw("");
+    can->Print(Form("%s/hit.pdf",outDir));
+    can->Print(Form("%s/hit.pdf]",outDir));
+
+    TFile *file_out=new TFile(Form("%s/%s",outDir,outName),"update");
+    file_out->cd();
+    hhit_x->Write(0,TObject::kOverwrite);
+    hhit_y->Write(0,TObject::kOverwrite);
+    hpos_xy->Write(0,TObject::kOverwrite);
+
+    delete can;
+    delete file_out;
+    delete fmip;
+
+}
