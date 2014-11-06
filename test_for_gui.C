@@ -3211,10 +3211,11 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
     int id5[41]={23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88};
     TString label[4]={"xpos","xneg","ypos","yneg"};
 
-    Float_t xped_mean[90],xped_sigma[90],yped_mean[90],yped_sigma[90];
+    Float_t xped_mean[41],xped_sigma[41],yped_mean[41],yped_sigma[41];
     Float_t xmean_buffer,xsigma_buffer,ymean_buffer,ysigma_buffer;
-    Float_t xlimit[90],ylimit[90];
+    Float_t xlimit[41],ylimit[41];
     Int_t xmip[90],ymip[90];
+    Int_t xmip_tmp,ymip_tmp;
     Float_t x,y;
     Int_t strip_id;
 
@@ -3233,15 +3234,23 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
     Int_t nentries=tmip->GetEntries();
     for(Int_t fee_id=0;fee_id<2;fee_id++){
         txped=(TTree*)fped->Get(Form("%s_ped",label[fee_id].Data()));
+        txped->BuildIndex("channel");
         txped->SetBranchAddress("mean",&xmean_buffer);
         txped->SetBranchAddress("sigma",&xsigma_buffer);
 
         typed=(TTree*)fped->Get(Form("%s_ped",label[fee_id+2].Data()));
+        typed->BuildIndex("channel");
         typed->SetBranchAddress("mean",&ymean_buffer);
         typed->SetBranchAddress("sigma",&ysigma_buffer);
-        for(Int_t i=0;i<90;i++){
-            txped->GetEntry(i);
-            typed->GetEntry(i);
+        for(Int_t i=0;i<41;i++){
+            if(fee_id==0){
+                txped->GetEntryWithIndex(id8[i]+1);
+                typed->GetEntryWithIndex(id8[40-i]+1);
+            }
+            else{
+                txped->GetEntryWithIndex(id8[40-i]+1);
+                typed->GetEntryWithIndex(id8[i]+1);
+            }
 
             xped_mean[i]=xmean_buffer;
             xped_sigma[i]=xsigma_buffer;
@@ -3258,27 +3267,35 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
             tmip->GetEntry(event_id);
 
             for(int ch_id=0;ch_id<41;ch_id++){
-                if(xmip[id8[ch_id]] > (xped_mean[id8[ch_id]]+xlimit[id8[ch_id]])){
+                if(fee_id==0){
+                    xmip_tmp=xmip[id8[ch_id]];
+                    ymip_tmp=ymip[id8[40-ch_id]];
+                }
+                else{
+                    xmip_tmp=xmip[id8[40-ch_id]];
+                    ymip_tmp=ymip[id8[ch_id]];
+                }
+                if(xmip_tmp> (xped_mean[ch_id]+xlimit[ch_id])){
                     if(fee_id==0){
-                        x=xmip[id8[ch_id]]-xped_mean[id8[ch_id]];
+                        x=xmip_tmp-xped_mean[ch_id];
                         strip_id=ch_id+1;
                         hx->Fill(strip_id,x);
                     }
                     else{
-                        x= 8000-(xmip[id8[ch_id]]-xped_mean[id8[ch_id]]);
+                        x= 8000-(xmip_tmp-xped_mean[ch_id]);
                         strip_id=41-ch_id;
                         hx->Fill(strip_id,x);
                     }
                 }
 
-                if(ymip[id8[ch_id]] > yped_mean[id8[ch_id]]+ylimit[id8[ch_id]]){
+                if(ymip_tmp > yped_mean[ch_id]+ylimit[ch_id]){
                     if(fee_id==0){
-                        y=ymip[id8[ch_id]]-yped_mean[id8[ch_id]];
+                        y=ymip_tmp-yped_mean[ch_id];
                         strip_id=41-ch_id;
                         hy->Fill(strip_id,y);
                     }
                     else{
-                        y=8000-(ymip[id8[ch_id]]-yped_mean[id8[ch_id]]);
+                        y=8000-(ymip_tmp-yped_mean[ch_id]);
                         strip_id=ch_id+1;
                         hy->Fill(strip_id,y);
                     }
