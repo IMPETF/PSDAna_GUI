@@ -27,6 +27,7 @@
 #include "TAxis.h"
 #include "TPaletteAxis.h"
 #include "TProfile.h"
+#include "TLegend.h"
 
 Double_t langaufun(Double_t *x, Double_t *par) {
 
@@ -3283,7 +3284,7 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
                     }
                     else{
                         x= 8000-(xmip_tmp-xped_mean[ch_id]);
-                        strip_id=41-ch_id;
+                        strip_id=ch_id+1;
                         hx->Fill(strip_id,x);
                     }
                 }
@@ -3291,7 +3292,7 @@ int draw_mip(const char* mipfile,const char* pedfile,const char* outDir,const ch
                 if(ymip_tmp > yped_mean[ch_id]+ylimit[ch_id]){
                     if(fee_id==0){
                         y=ymip_tmp-yped_mean[ch_id];
-                        strip_id=41-ch_id;
+                        strip_id=ch_id+1;
                         hy->Fill(strip_id,y);
                     }
                     else{
@@ -4256,9 +4257,48 @@ int analyze_calib(const char* date,const Char_t* parentDir,const Char_t* infile,
 
 
 //for 2014 ps beam_test
-void draw_hitnum(const char* mipfile,const char* pedfile,const char* outDir,const char* outName,const Int_t limit=5)
+
+void ReverseXAxis (TH1 *h)
 {
-    gStyle->SetOptStat(0);
+   // Remove the current axis
+   h->GetXaxis()->SetLabelOffset(999);
+   h->GetXaxis()->SetTickLength(0);
+
+   // Redraw the new axis
+   gPad->Update();
+   TGaxis *newaxis = new TGaxis(gPad->GetUxmax(),
+                                gPad->GetUymin(),
+                                gPad->GetUxmin(),
+                                gPad->GetUymin(),
+                                h->GetXaxis()->GetXmin(),
+                                h->GetXaxis()->GetXmax(),
+                                510,"-");
+   newaxis->SetLabelOffset(-0.03);
+   newaxis->Draw();
+}
+
+void ReverseYAxis (TH1 *h)
+{
+   // Remove the current axis
+   h->GetYaxis()->SetLabelOffset(999);
+   h->GetYaxis()->SetTickLength(0);
+
+   // Redraw the new axis
+   gPad->Update();
+   TGaxis *newaxis = new TGaxis(gPad->GetUxmin(),
+                                gPad->GetUymax(),
+                                gPad->GetUxmin()-0.001,
+                                gPad->GetUymin(),
+                                h->GetYaxis()->GetXmin(),
+                                h->GetYaxis()->GetXmax(),
+                                510,"+");
+   newaxis->SetLabelOffset(-0.03);
+   newaxis->Draw();
+}
+
+void extract_psd(const char* mipfile,const char* pedfile,const char* outDir,const char* outName)
+{
+    //gStyle->SetOptStat(0);
 
     int id8[4][41]={{0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66},
                    {66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,47,46,22,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,1,0},
@@ -4269,9 +4309,12 @@ void draw_hitnum(const char* mipfile,const char* pedfile,const char* outDir,cons
                    {88,87,86,85,84,83,82,81,80,79,78,77,76,75,74,73,72,71,69,68,45,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,24,23},
                    {23,24,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,45,68,69,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88}};
 
-    TString label[4]={"xpos","xneg","ypos","yneg"};
-    Float_t ped_mean[4][41],ped_sigma[4][41];
-    Float_t thresh[4][41];
+
+
+    TString label[4]={"xpos","xneg","ypos","yneg"};//fee_id:0-xpos,1-xneg,2-ypos,3-yneg
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];//[fee_id][strip_id][dynode_id]
+                                                   //dynode_id: 0-dy5,1-dy8
+
     Float_t ped_meanbuffer,ped_sigmabuffer;
     TFile* fped=new TFile(pedfile);
     TTree* tped=0;
@@ -4284,13 +4327,26 @@ void draw_hitnum(const char* mipfile,const char* pedfile,const char* outDir,cons
         tped->BuildIndex("channel");
         for(int i=0;i<41;i++){
             tped->GetEntryWithIndex(id8[fee_id][i]+1);
-            ped_mean[fee_id][i]=ped_meanbuffer;
-            ped_sigma[fee_id][i]=ped_sigmabuffer;
-            thresh[fee_id][i]=ped_meanbuffer+limit*ped_sigmabuffer;
+            ped_mean[fee_id][i][1]=ped_meanbuffer;
+            ped_sigma[fee_id][i][1]=ped_sigmabuffer;
+
+            tped->GetEntryWithIndex(id5[fee_id][i]+1);
+            ped_mean[fee_id][i][0]=ped_meanbuffer;
+            ped_sigma[fee_id][i][0]=ped_sigmabuffer;
         }
         delete tped;
     }
     delete fped;
+
+    TFile *file_out=new TFile(Form("%s/%s",outDir,outName),"recreate");
+    TTree *tree_ped=new TTree("ped_data","Pedestal from MIPs distribution");
+    tree_ped->Branch("ped_mean",ped_mean,"ped_mean[4][41][2]/F");
+    tree_ped->Branch("ped_sigma",ped_sigma,"ped_sigma[4][41][2]/F");
+    tree_ped->Fill();
+    file_out->mkdir("Pedestal");
+    file_out->cd("Pedestal");
+    tree_ped->Write();
+    ///----------------------------
 
     Int_t xpos[90],xneg[90],ypos[90],yneg[90];
     TFile* fmip=new TFile(mipfile);
@@ -4300,80 +4356,1157 @@ void draw_hitnum(const char* mipfile,const char* pedfile,const char* outDir,cons
     tmip->SetBranchAddress("ypos",ypos);
     tmip->SetBranchAddress("yneg",yneg);
 
-    TH1F *hhit_x=new TH1F("hhit_x","hhit_x",42,-0.5,41.5);
-    TH1F *hhit_y=new TH1F("hhit_y","hhit_y",42,-0.5,41.5);
-    TH2F *hpos_xy=new TH2F("hpos_xy","hpos_xy",41,0.5,41.5,41,0.5,41.5);
 
-    Int_t hitnum_x,hitnum_y;
-    Int_t hitstrip_x,hitstrip_y;
+
     Float_t xmean_geo[41],ymean_geo[41];
     Float_t xmean_alg[41],ymean_alg[41];
-    Float_t mipbuffer[4][41];
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    Float_t nopedmipbuffer[4][41][2];
+
+    file_out->cd();
+    TTree* tree_raw=new TTree("raw_data","Raw ADC counts of each valid channel");
+    tree_raw->SetAutoSave(50000000);
+    tree_raw->Branch("raw_data",mipbuffer,"raw_data[4][41][2]/I");
+    TTree* tree_noped=new TTree("noped_data","ADC counts without pedestal of each valid channel");
+    tree_noped->Branch("noped_data",nopedmipbuffer,"noped_data[4][41][2]/F");
+    tree_noped->SetAutoSave(50000000);
+    TTree* tree_calib=new TTree("calib_data","ADC counts of each PSD strip");
+    tree_calib->Branch("xmean_geo",xmean_geo,"xmean_geo[41]/F");
+    tree_calib->Branch("xmean_alg",xmean_alg,"xmean_alg[41]/F");
+    tree_calib->Branch("ymean_geo",ymean_geo,"ymean_geo[41]/F");
+    tree_calib->Branch("ymean_alg",ymean_alg,"ymean_alg[41]/F");
+    tree_calib->SetAutoSave(50000000);
+
     Int_t entries=tmip->GetEntries();
     for(int i=0;i<entries;i++){
         tmip->GetEntry(i);
+
+        //x
+        for(int j=0;j<41;j++){
+            mipbuffer[0][j][0]=xpos[id5[0][j]];
+            mipbuffer[0][j][1]=xpos[id8[0][j]];
+            nopedmipbuffer[0][j][0]=mipbuffer[0][j][0]-ped_mean[0][j][0];
+            nopedmipbuffer[0][j][1]=mipbuffer[0][j][1]-ped_mean[0][j][1];
+
+            mipbuffer[1][j][0]=xneg[id5[1][j]];
+            mipbuffer[1][j][1]=xneg[id8[1][j]];
+            nopedmipbuffer[1][j][0]=mipbuffer[1][j][0]-ped_mean[1][j][0];
+            nopedmipbuffer[1][j][1]=mipbuffer[1][j][1]-ped_mean[1][j][1];
+            //
+            if(nopedmipbuffer[0][j][1]<0) nopedmipbuffer[0][j][1]=0;
+            if(nopedmipbuffer[1][j][1]<0) nopedmipbuffer[1][j][1]=0;
+            xmean_alg[j]=(nopedmipbuffer[0][j][1]+nopedmipbuffer[1][j][1])/2;
+            xmean_geo[j]=TMath::Sqrt(nopedmipbuffer[0][j][1]*nopedmipbuffer[1][j][1]);
+
+        }
+
+        //y
+        for(int j=0;j<41;j++){
+            mipbuffer[2][j][0]=ypos[id5[2][j]];
+            mipbuffer[2][j][1]=ypos[id8[2][j]];
+            nopedmipbuffer[2][j][0]=mipbuffer[2][j][0]-ped_mean[2][j][0];
+            nopedmipbuffer[2][j][1]=mipbuffer[2][j][1]-ped_mean[2][j][1];
+
+            mipbuffer[3][j][0]=yneg[id5[3][j]];
+            mipbuffer[3][j][1]=yneg[id8[3][j]];
+            nopedmipbuffer[3][j][0]=mipbuffer[3][j][0]-ped_mean[3][j][0];
+            nopedmipbuffer[3][j][1]=mipbuffer[3][j][1]-ped_mean[3][j][1];
+            //
+            if(nopedmipbuffer[2][j][1]<0) nopedmipbuffer[2][j][1]=0;
+            if(nopedmipbuffer[3][j][1]<0) nopedmipbuffer[3][j][1]=0;
+            ymean_alg[j]=(nopedmipbuffer[2][j][1]+nopedmipbuffer[3][j][1])/2;
+            ymean_geo[j]=TMath::Sqrt(nopedmipbuffer[2][j][1]*nopedmipbuffer[3][j][1]);
+
+        }
+
+        tree_raw->Fill();
+        tree_noped->Fill();
+        tree_calib->Fill();
+    }
+
+    file_out->mkdir("Raw");
+    file_out->cd("Raw");
+    tree_raw->Write();
+    tree_noped->Write();
+    file_out->mkdir("Analysis");
+    file_out->cd("Analysis");
+    tree_calib->Write();
+
+
+    delete file_out;
+    delete fmip;
+
+}
+
+void draw_hitnum(const char* psdfile,const char* basename,const Int_t limit=5)
+{
+    TFile* file_in=new TFile(psdfile,"update");
+    TString outDir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //--------
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];//[fee_id][strip_id][dynode_id]
+                                                   //dynode_id: 0-dy5,1-dy8
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+    delete tree_ped;
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+
+    //-------------
+    Float_t xstrip_pos[41]={-400,-380,-360,-340,-320,-300,-280,-260,-240,-220,-200,-180,-160,-140,-120,-100,-80,-60,-40,-20,
+                            0,20,40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340,360,380,400};
+    Float_t ystrip_pos[41]={-400,-380,-360,-340,-320,-300,-280,-260,-240,-220,-200,-180,-160,-140,-120,-100,-80,-60,-40,-20,
+                            0,20,40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340,360,380,400};
+
+    file_in->cd();
+    TH1F *hhit_x=new TH1F(Form("hhit_x_%dsigma",limit),Form("Multi Hit Num Distribution in X plane(%dsigma)",limit),12,-0.5,11.5);
+    hhit_x->GetXaxis()->SetTitle("Hit_Number in X plane");
+    hhit_x->GetXaxis()->CenterTitle();
+    hhit_x->GetYaxis()->SetTitle("Event Num");
+    hhit_x->GetYaxis()->CenterTitle();
+    TH1F *hhit_y=new TH1F(Form("hhit_y_%dsigma",limit),Form("Multi Hit Num Distribution in Y plane(%dsigma)",limit),12,-0.5,11.5);
+    hhit_y->GetXaxis()->SetTitle("Hit_Number in Y plane");
+    hhit_y->GetXaxis()->CenterTitle();
+    hhit_y->GetYaxis()->SetTitle("Event Num");
+    hhit_y->GetYaxis()->CenterTitle();
+
+    TH2F *hpos_xy=new TH2F(Form("hpos_xy_%dsigma",limit),Form("Hit Position Distribution in PSD(%dsigma)",limit),41,-410,410,41,-410,410);
+    hpos_xy->GetXaxis()->SetTitle("Y(mm)");
+    hpos_xy->GetXaxis()->CenterTitle();
+    hpos_xy->GetYaxis()->SetTitle("X(mm)");
+    hpos_xy->GetYaxis()->CenterTitle();
+
+    TH2F *hhit_xy=new TH2F(Form("hhit_xy_%dsigma",limit),Form("MultiHit_X VS MultiHit_Y(%dsigma)",limit),12,-0.5,11.5,12,-0.5,11.5);
+    hhit_xy->GetXaxis()->SetTitle("X Hit_num");
+    hhit_xy->GetXaxis()->CenterTitle();
+    hhit_xy->GetYaxis()->SetTitle("Y Hit_num");
+    hhit_xy->GetYaxis()->CenterTitle();
+
+    Int_t hitnum_x,hitnum_y,zerohit_x,zerohit_y,zerohit_xy;
+    Int_t hitid_x[41],hitid_y[41];
+    //Float_t strippos_x[41],strippos_y[41];
+    Int_t hit_x,hit_y,hit_xy;
+    Int_t hitstrip_x,hitstrip_y;
+    Float_t hitpos_x,hitpos_y;
+
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    //Float_t nopedmipbuffer[4][41][2];
+    Float_t xmean_geo[41],ymean_geo[41];
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    //TTree* tree_noped=(TTree*)file_in->Get("Raw/noped_data");
+    //tree_noped->SetBranchAddress("noped_data",nopedmipbuffer);
+    TTree* tree_calib=(TTree*)file_in->Get("Analysis/calib_data");
+    tree_calib->SetBranchAddress("xmean_geo",xmean_geo);
+    tree_calib->SetBranchAddress("ymean_geo",ymean_geo);
+    TTree* tree_hitnum=new TTree(Form("hitnum_%dsigma",limit),Form("hitnum_%dsigma",limit));
+    tree_hitnum->Branch("hitnum_x",&hitnum_x,"hitnum_x/I");
+    tree_hitnum->Branch("hitnum_y",&hitnum_y,"hitnum_y/I");
+    tree_hitnum->Branch("hitid_x",hitid_x,"hitid_x[hitnum_x]/I");
+    tree_hitnum->Branch("hitid_y",hitid_y,"hitid_y[hitnum_y]/I");
+
+    zerohit_x=0;zerohit_y=0;zerohit_xy=0;
+    hit_x=0;hit_y=0;hit_xy=0;
+    Int_t entries=tree_raw->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+        tree_calib->GetEntry(i);
+        //tree_noped->GetEntry(i);
         hitnum_x=0;hitnum_y=0;
         hitstrip_x=-1;hitstrip_y=-1;
 
         //x
         for(int j=0;j<41;j++){
-            mipbuffer[0][j]=xpos[id8[0][j]]-ped_mean[0][j];
-            mipbuffer[1][j]=xneg[id8[1][j]]-ped_mean[1][j];
-            if(mipbuffer[0][j]<0) mipbuffer[0][j]=0;
-            if(mipbuffer[1][j]<0) mipbuffer[1][j]=0;
-            xmean_alg[j]=(mipbuffer[0][j]+mipbuffer[1][j])/2;
-            xmean_geo[j]=TMath::Sqrt(mipbuffer[0][j]*mipbuffer[1][j]);
-            if(xpos[id8[0][j]]>thresh[0][j] && xneg[id8[1][j]]>thresh[1][j]){
+            if(mipbuffer[0][j][1]>thresh[0][j] || mipbuffer[1][j][1]>thresh[1][j]){
+                hitid_x[hitnum_x]=j;
                 hitnum_x++;
             }
         }
         hhit_x->Fill(hitnum_x);
-        if(hitnum_x>=1){
-            hitstrip_x=TMath::LocMax(41,xmean_geo);
-        }
+
+        hitstrip_x=TMath::LocMax(41,xmean_geo);
+        hitpos_x=xstrip_pos[hitstrip_x];
+
         //y
         for(int j=0;j<41;j++){
-            mipbuffer[2][j]=ypos[id8[2][j]]-ped_mean[2][j];
-            mipbuffer[3][j]=yneg[id8[3][j]]-ped_mean[3][j];
-            if(mipbuffer[2][j]<0) mipbuffer[2][j]=0;
-            if(mipbuffer[3][j]<0) mipbuffer[3][j]=0;
-            ymean_alg[j]=(mipbuffer[2][j]+mipbuffer[3][j])/2;
-            ymean_geo[j]=TMath::Sqrt(mipbuffer[2][j]*mipbuffer[3][j]);
-            if(ypos[id8[2][j]]>thresh[2][j] && yneg[id8[3][j]]>thresh[3][j]){
+            if(mipbuffer[2][j][1]>thresh[2][j] || mipbuffer[3][j][1]>thresh[3][j]){
+                hitid_y[hitnum_y]=j;
                 hitnum_y++;
             }
         }
         hhit_y->Fill(hitnum_y);
-        if(hitnum_y>=1){
-            hitstrip_y=TMath::LocMax(41,ymean_geo);
+        //
+        hitstrip_y=TMath::LocMax(41,ymean_geo);
+        hitpos_y=ystrip_pos[hitstrip_y];
+
+        ///////////////
+        if(hitnum_x==0){
+            zerohit_x++;
+        }
+        if(hitnum_y==0){
+            zerohit_y++;
+        }
+        if(hitnum_x==0 && hitnum_y==0){
+            zerohit_xy++;
         }
 
-        //pos
-        if(hitstrip_x>-1 && hitstrip_y>-1){
-            hpos_xy->Fill(hitstrip_x+1,hitstrip_y+1);
+        if(hitnum_x>0){
+            hit_x++;
         }
+        if(hitnum_y>0){
+            hit_y++;
+        }
+        if(hitnum_x>0 && hitnum_y>0){
+            hit_xy++;
+        }
+        //pos
+        if(hitnum_x>0 && hitnum_y>0){
+            hpos_xy->Fill(-hitpos_x,-hitpos_y);
+        }
+        hhit_xy->Fill(hitnum_x,hitnum_y);
+        tree_hitnum->Fill();
+
     }
 
     TCanvas* can=new TCanvas("can","can",800,800);
-    can->Print(Form("%s/hit.pdf[",outDir));
     can->Divide(2,2);
     can->cd(1);
+    gPad->SetLogy();
     hhit_x->Draw();
     can->cd(2);
+    gPad->SetLogy();
     hhit_y->Draw();
     can->cd(3);
-    hpos_xy->Draw("");
-    can->Print(Form("%s/hit.pdf",outDir));
-    can->Print(Form("%s/hit.pdf]",outDir));
+    hpos_xy->Draw();
+    gPad->Update();
+    ReverseXAxis(hpos_xy);
+    ReverseYAxis(hpos_xy);
+    can->cd(4);
+    hhit_xy->Draw("text");
+    can->Print(Form("%s/%s_%dsigma.eps",outDir.Data(),basename,limit));
 
-    TFile *file_out=new TFile(Form("%s/%s",outDir,outName),"update");
-    file_out->cd();
+    FILE* fp=fopen(Form("%s/%s_%dsigma.txt",outDir.Data(),basename,limit),"w");
+    fprintf(fp,"zero hit x: %d\n",zerohit_x);
+    fprintf(fp,"zero hit y: %d\n",zerohit_y);
+    fprintf(fp,"zero hit xy: %d\n",zerohit_xy);
+    fprintf(fp,"================\n");
+    fprintf(fp,"hit x: %d\t%f\n",hit_x,100.*hit_xy/hit_x);
+    fprintf(fp,"hit y: %d\t%f\n",hit_y,100.*hit_xy/hit_y);
+    fprintf(fp,"hit xy: %d\n",hit_xy);
+    fprintf(fp,"================\n");
+    fprintf(fp,"total events: %d\n",entries);
+    fclose(fp);
+
+    file_in->cd("Analysis");
+    tree_hitnum->Write(0,TObject::kOverwrite);
+    if(!file_in->cd("Result")){
+        file_in->mkdir("Result");
+        file_in->cd("Result");
+    }
     hhit_x->Write(0,TObject::kOverwrite);
     hhit_y->Write(0,TObject::kOverwrite);
     hpos_xy->Write(0,TObject::kOverwrite);
+    hhit_xy->Write(0,TObject::kOverwrite);
 
     delete can;
-    delete file_out;
-    delete fmip;
+    delete file_in;
+
+}
+
+
+void bt_draw_channel(const char* psdfile,Int_t limit=5)
+{
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+    //------------------------------------------
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    TH1F* hdy8_xpos[41];
+    TH1F* hdy8_xneg[41];
+    TH1F* hdy8_ypos[41];
+    TH1F* hdy8_yneg[41];
+    for(int i=0;i<41;i++){
+        hdy8_xpos[i]=new TH1F(Form("hdy8_xpos_%d",i+1),Form("hdy8_xpos_%d",i+1),400,-0.5,3999.5);
+        hdy8_xneg[i]=new TH1F(Form("hdy8_xneg_%d",i+1),Form("hdy8_xneg_%d",i+1),400,-0.5,3999.5);
+        hdy8_ypos[i]=new TH1F(Form("hdy8_ypos_%d",i+1),Form("hdy8_ypos_%d",i+1),400,-0.5,3999.5);
+        hdy8_yneg[i]=new TH1F(Form("hdy8_yneg_%d",i+1),Form("hdy8_yneg_%d",i+1),400,-0.5,3999.5);
+    }
+
+
+    Int_t entries=tree_raw->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+
+        for(int j=0;j<41;j++){
+            hdy8_xpos[j]->Fill(mipbuffer[0][j][1]);
+            hdy8_xneg[j]->Fill(mipbuffer[1][j][1]);
+            hdy8_ypos[j]->Fill(mipbuffer[2][j][1]);
+            hdy8_yneg[j]->Fill(mipbuffer[3][j][1]);
+        }
+
+    }
+
+    TCanvas* can=new TCanvas("can","can",800,800);
+    can->Divide(2,2);
+    can->Print(Form("%s/mips_anlysis_%dsigma.pdf[",dir.Data(),limit));
+    TLine *line_xpos=new TLine;
+    line_xpos->SetLineColor(kRed);
+    line_xpos->SetLineWidth(1);
+    TLine *line_xneg=new TLine;
+    line_xneg->SetLineColor(kRed);
+    line_xneg->SetLineWidth(1);
+    TLine *line_ypos=new TLine;
+    line_ypos->SetLineColor(kRed);
+    line_ypos->SetLineWidth(1);
+    TLine *line_yneg=new TLine;
+    line_yneg->SetLineColor(kRed);
+    line_yneg->SetLineWidth(1);
+    for(int i=0;i<41;i++){
+        can->cd(1);
+        gPad->SetLogy();
+        hdy8_xpos[i]->Draw();
+        line_xpos->DrawLine(thresh[0][i],0,thresh[0][i],10000);
+        can->cd(2);
+        gPad->SetLogy();
+        hdy8_xneg[i]->Draw();
+        line_xneg->DrawLine(thresh[1][i],0,thresh[1][i],10000);
+        can->cd(3);
+        gPad->SetLogy();
+        hdy8_ypos[i]->Draw();
+        line_ypos->DrawLine(thresh[2][i],0,thresh[2][i],10000);
+        can->cd(4);
+        gPad->SetLogy();
+        hdy8_yneg[i]->Draw();
+        line_yneg->DrawLine(thresh[3][i],0,thresh[3][i],10000);
+        can->Print(Form("%s/mips_anlysis_%dsigma.pdf",dir.Data(),limit));
+    }
+
+    can->Print(Form("%s/mips_anlysis_%dsigma.pdf]",dir.Data(),limit));
+    delete line_xpos;delete line_xneg;
+    delete line_ypos;delete line_yneg;
+    delete can;
+    delete file_in;
+
+}
+
+
+void bt_draw_meangeo(const char* psdfile)
+{
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[2][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=TMath::Sqrt(ped_sigma[0][ch_id][1]*ped_sigma[1][ch_id][1]);
+        thresh[1][ch_id]=TMath::Sqrt(ped_sigma[2][ch_id][1]*ped_sigma[3][ch_id][1]);
+    }
+
+    //------------------------------------------
+    Float_t xmean_geo[41],ymean_geo[41];
+    Int_t hitnum_x,hitnum_y;
+    TTree* tree_calib=(TTree*)file_in->Get("Analysis/calib_data");
+    tree_calib->SetBranchAddress("xmean_geo",xmean_geo);
+    tree_calib->SetBranchAddress("ymean_geo",ymean_geo);
+    TTree* tree_hitnum=(TTree*)file_in->Get("Analysis/hitnum_5sigma");
+    tree_hitnum->SetBranchAddress("hitnum_x",&hitnum_x);
+    tree_hitnum->SetBranchAddress("hitnum_y",&hitnum_y);
+    tree_calib->AddFriend(tree_hitnum);
+
+    TH1F* hdy8_xmean[41];
+    TH1F* hdy8_ymean[41];
+    TH1F* hdy8_xmean_singlehit[41];
+    TH1F* hdy8_ymean_singlehit[41];
+    for(int i=0;i<41;i++){
+        hdy8_xmean[i]=new TH1F(Form("hdy8_xmean_%d",i+1),Form("hdy8_xmean_%d",i+1),200,-0.5,1999.5);
+        hdy8_ymean[i]=new TH1F(Form("hdy8_ymean_%d",i+1),Form("hdy8_ymean_%d",i+1),200,-0.5,1999.5);
+        hdy8_xmean_singlehit[i]=new TH1F(Form("hdy8_xmean_singlehit_%d",i+1),Form("hdy8_xmean_singlehit_%d",i+1),200,-0.5,1999.5);
+        hdy8_ymean_singlehit[i]=new TH1F(Form("hdy8_ymean_singlehit_%d",i+1),Form("hdy8_ymean_singlehit_%d",i+1),200,-0.5,1999.5);
+        hdy8_xmean_singlehit[i]->SetLineColor(kBlack);
+        hdy8_ymean_singlehit[i]->SetLineColor(kBlack);
+    }
+
+
+    Int_t entries=tree_calib->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_calib->GetEntry(i);
+
+        for(int j=0;j<41;j++){
+            hdy8_xmean[j]->Fill(xmean_geo[j]);
+            hdy8_ymean[j]->Fill(ymean_geo[j]);
+            if(hitnum_x==1){
+                hdy8_xmean_singlehit[j]->Fill(xmean_geo[j]);
+            }
+            if(hitnum_y==1){
+                hdy8_ymean_singlehit[j]->Fill(ymean_geo[j]);
+            }
+
+        }
+
+    }
+
+    TCanvas* can=new TCanvas("can","can",800,400);
+    can->Divide(2,1);
+    can->Print(Form("%s/mips_geomean.pdf[",dir.Data()));
+    TLine *line_x=new TLine;
+    line_x->SetLineColor(kRed);
+    line_x->SetLineWidth(1);
+    TLine *line_y=new TLine;
+    line_y->SetLineColor(kRed);
+    line_y->SetLineWidth(1);
+
+    TF1* ffit;
+    Float_t mpv,fwhm;
+    for(int i=0;i<41;i++){
+        can->cd(1);
+        gPad->SetLogy();
+        //ffit=langaus(hdy8_xmean_singlehit[i],mpv,fwhm,0,thresh[0][i]);
+        hdy8_xmean[i]->Draw();
+        hdy8_xmean_singlehit[i]->Draw("same");
+        //ffit->Draw("lsame");
+        line_x->DrawLine(5*thresh[0][i],0,thresh[0][i],10000);
+        can->cd(2);
+        gPad->SetLogy();
+        //ffit=langaus(hdy8_ymean_singlehit[i],mpv,fwhm,0,thresh[1][i]);
+        hdy8_ymean[i]->Draw();
+        hdy8_ymean_singlehit[i]->Draw("same");
+        //ffit->Draw("lsame");
+        line_y->DrawLine(5*thresh[1][i],0,thresh[1][i],10000);
+
+        can->Print(Form("%s/mips_geomean.pdf",dir.Data()));
+    }
+
+    can->Print(Form("%s/mips_geomean.pdf]",dir.Data()));
+    delete line_x;delete line_y;
+    delete can;
+    delete file_in;
+}
+
+
+void bt_draw_singlehit(const char* psdfile,Int_t limit=5)
+{
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+    //------------------------------------------
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    Int_t hitnum_x,hitnum_y;
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    TTree* tree_hitnum=(TTree*)file_in->Get(Form("Analysis/hitnum_%dsigma",limit));
+    tree_hitnum->SetBranchAddress("hitnum_x",&hitnum_x);
+    tree_hitnum->SetBranchAddress("hitnum_y",&hitnum_y);
+    tree_raw->AddFriend(tree_hitnum);
+
+    TH1F* hdy8_xpos[41];
+    TH1F* hdy8_xneg[41];
+    TH1F* hdy8_ypos[41];
+    TH1F* hdy8_yneg[41];
+    for(int i=0;i<41;i++){
+        hdy8_xpos[i]=new TH1F(Form("hdy8_xpos_%d",i+1),Form("hdy8_xpos_%d",i+1),400,-0.5,3999.5);
+        hdy8_xneg[i]=new TH1F(Form("hdy8_xneg_%d",i+1),Form("hdy8_xneg_%d",i+1),400,-0.5,3999.5);
+        hdy8_ypos[i]=new TH1F(Form("hdy8_ypos_%d",i+1),Form("hdy8_ypos_%d",i+1),400,-0.5,3999.5);
+        hdy8_yneg[i]=new TH1F(Form("hdy8_yneg_%d",i+1),Form("hdy8_yneg_%d",i+1),400,-0.5,3999.5);
+    }
+
+
+    Int_t entries=tree_raw->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+
+        if(hitnum_x==1){
+            for(int j=0;j<41;j++){
+                hdy8_xpos[j]->Fill(mipbuffer[0][j][1]);
+                hdy8_xneg[j]->Fill(mipbuffer[1][j][1]);
+
+            }
+        }
+
+        if(hitnum_y==1){
+            for(int j=0;j<41;j++){
+                hdy8_ypos[j]->Fill(mipbuffer[2][j][1]);
+                hdy8_yneg[j]->Fill(mipbuffer[3][j][1]);
+
+            }
+        }
+
+
+    }
+
+    TCanvas* can=new TCanvas("can","can",800,800);
+    can->Divide(2,2);
+    can->Print(Form("%s/mips_onehit_%dsigma.pdf[",dir.Data(),limit));
+    TLine *line_xpos=new TLine;
+    line_xpos->SetLineColor(kRed);
+    line_xpos->SetLineWidth(1);
+    TLine *line_xneg=new TLine;
+    line_xneg->SetLineColor(kRed);
+    line_xneg->SetLineWidth(1);
+    TLine *line_ypos=new TLine;
+    line_ypos->SetLineColor(kRed);
+    line_ypos->SetLineWidth(1);
+    TLine *line_yneg=new TLine;
+    line_yneg->SetLineColor(kRed);
+    line_yneg->SetLineWidth(1);
+    for(int i=0;i<41;i++){
+        can->cd(1);
+        gPad->SetLogy();
+        hdy8_xpos[i]->Draw();
+        line_xpos->DrawLine(thresh[0][i],0,thresh[0][i],10000);
+        can->cd(2);
+        gPad->SetLogy();
+        hdy8_xneg[i]->Draw();
+        line_xneg->DrawLine(thresh[1][i],0,thresh[1][i],10000);
+        can->cd(3);
+        gPad->SetLogy();
+        hdy8_ypos[i]->Draw();
+        line_ypos->DrawLine(thresh[2][i],0,thresh[2][i],10000);
+        can->cd(4);
+        gPad->SetLogy();
+        hdy8_yneg[i]->Draw();
+        line_yneg->DrawLine(thresh[3][i],0,thresh[3][i],10000);
+        can->Print(Form("%s/mips_onehit_%dsigma.pdf",dir.Data(),limit));
+    }
+
+    can->Print(Form("%s/mips_onehit_%dsigma.pdf]",dir.Data(),limit));
+    delete line_xpos;delete line_xneg;
+    delete line_ypos;delete line_yneg;
+    delete can;
+    delete file_in;
+
+}
+
+void bt_efficiency(const char* psdfile,Int_t sample_strip_x=25,Int_t sample_strip_y=25,Int_t limit=5)
+{
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+    //------------------------------------------
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    Int_t hitnum_x,hitnum_y;
+    Int_t hitid_x[41],hitid_y[41];
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    TTree* tree_hitnum=(TTree*)file_in->Get(Form("Analysis/hitnum_5sigma"));
+    tree_hitnum->SetBranchAddress("hitnum_x",&hitnum_x);
+    tree_hitnum->SetBranchAddress("hitnum_y",&hitnum_y);
+    tree_hitnum->SetBranchAddress("hitid_x",hitid_x);
+    tree_hitnum->SetBranchAddress("hitid_y",hitid_y);
+    tree_raw->AddFriend(tree_hitnum);
+
+
+    //Int_t totalnum_x=0;Int_t totalnum_y=0;
+    Int_t samplenum_x=0;Int_t samplenum_y=0;
+    Int_t firednum_x=0;Int_t firednum_y=0;
+    Int_t temp_x,temp_y;
+    Int_t entries=tree_raw->GetEntries();
+    //totalnum_x=entries;totalnum_y=entries;
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+        temp_x=0;temp_y=0;
+        /*
+        if(hitnum_x==1){
+            if(hitid_x[0]==sample_strip_x){
+                samplenum_x++;
+                for(int j=0;j<41;j++){
+                    if(mipbuffer[2][j][1]>thresh[2][j] || mipbuffer[3][j][1]>thresh[3][j]){
+                        temp_y++;
+                    }
+
+                }
+                if(temp_y>0)    firednum_y++;
+            }
+        }
+
+        if(hitnum_y==1){
+            if(hitid_y[0]==sample_strip_y){
+                samplenum_y++;
+                for(int j=0;j<41;j++){
+                    if(mipbuffer[0][j][1]>thresh[0][j] || mipbuffer[1][j][1]>thresh[1][j]){
+                        temp_x++;
+                    }
+
+                }
+                if(temp_x>0)    firednum_x++;
+            }
+        }
+        */
+        if(hitnum_x==1&&hitnum_y==1){
+            if(hitid_x[0]==sample_strip_x){
+                samplenum_x++;
+                for(int j=0;j<41;j++){
+                    if(mipbuffer[2][j][1]>thresh[2][j] || mipbuffer[3][j][1]>thresh[3][j]){
+                        temp_y++;
+                    }
+
+                }
+                if(temp_y>0)    firednum_y++;
+            }
+
+            if(hitid_y[0]==sample_strip_y){
+                samplenum_y++;
+                for(int j=0;j<41;j++){
+                    if(mipbuffer[0][j][1]>thresh[0][j] || mipbuffer[1][j][1]>thresh[1][j]){
+                        temp_x++;
+                    }
+
+                }
+                if(temp_x>0)    firednum_x++;
+            }
+        }
+
+    }
+
+    FILE* fp=fopen(Form("%s/eff_%dsigma.csv",dir.Data(),limit),"w");
+    fprintf(fp,"entries\t%d\n",entries);
+    fprintf(fp,"X:\n");
+    fprintf(fp,"x_sample:\t%d\ty_fired:\t%d\ty_efficiency\t%f\n",samplenum_x,firednum_y,100.*firednum_y/samplenum_x);
+    fprintf(fp,"Y:\n");
+    fprintf(fp,"y_sample:\t%d\tx_fired:\t%d\tx_efficiency\t%f\n",samplenum_y,firednum_x,100.*firednum_x/samplenum_y);
+    fclose(fp);
+
+    delete file_in;
+}
+
+void bt_draw_backsca(const char* psdfile)
+{
+    gStyle->SetOptStat(0);
+    TFile* file_in=new TFile(psdfile,"update");
+    TString outDir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //
+    Int_t hitnum_x,hitnum_y;
+    Int_t hitid_x[41],hitid_y[41];
+
+    TTree* tree_hitnum=(TTree*)file_in->Get("Analysis/hitnum_5sigma");
+    TH1F* hall_x=new TH1F("hall_x","Distribution of Fired Strips for All evnets(X)",41,-0.5,40.5);
+    hall_x->GetXaxis()->SetTitle("Strip_ID");
+    hall_x->GetYaxis()->SetTitle("Event_NUM");
+    TH1F* hsingle_x=new TH1F("hsingle_x","Distribution of Fired Strips for Single_hit evnets(X)",41,-0.5,40.5);
+    TH1F* hdiff_x;
+    hall_x->SetLineColor(kBlue);hall_x->SetLineWidth(2);
+    hsingle_x->SetLineColor(kRed);hsingle_x->SetLineWidth(2);
+
+
+    TH1F* hall_y=new TH1F("hall_y","Distribution of Fired Strips for All evnets(Y)",41,-0.5,40.5);
+    hall_y->GetXaxis()->SetTitle("Strip_ID");
+    hall_y->GetYaxis()->SetTitle("Event_NUM");
+    TH1F* hsingle_y=new TH1F("hsingle_y","Distribution of Fired Strips for Single_hit evnets(Y)",41,-0.5,40.5);
+    TH1F* hdiff_y;
+    hall_y->SetLineColor(kBlue);hall_y->SetLineWidth(2);
+    hsingle_y->SetLineColor(kRed);hsingle_y->SetLineWidth(2);
+
+
+    Double_t ymin = 0;
+    Double_t ymax = 0.5;
+    Double_t dy = (ymax-ymin)/0.8; //10 per cent margins top and bottom
+    Double_t xmin = -0.5;
+    Double_t xmax = 40.5;
+    Double_t dx = (xmax-xmin)/0.8;
+
+    TCanvas* can=new TCanvas("can","Distribution of Fired Strips",800,400);
+    can->Divide(2,1);
+    can->cd(1);
+    gPad->SetLogy();
+
+    tree_hitnum->Draw("hitid_x>>hall_x");
+    tree_hitnum->Draw("hitid_x[0]>>hsingle_x","hitnum_x==1","same");
+    //gPad->BuildLegend();
+    hdiff_x=(TH1F*)hsingle_x->Clone("hdiff_x");
+    hdiff_x->SetLineColor(kGreen);hdiff_x->SetLineWidth(2);hdiff_x->SetLineStyle(5);hdiff_x->SetFillStyle(3005);hdiff_x->SetFillColor(kGreen);
+    hdiff_x->Divide(hall_x);
+    TPad* pad1=new TPad("pad1","",0,0,1,1);
+    pad1->SetFillStyle(4000);
+    pad1->Range(xmin-0.1*dx,ymin-0.1*dy,xmax+0.1*dx,ymax+0.1*dy);
+    pad1->Draw();
+    pad1->cd();
+    hdiff_x->Draw("][sames");
+    TGaxis *axis1 = new TGaxis(xmax,ymin,xmax,ymax,ymin,ymax,50510,"+L");
+    axis1->SetLabelColor(kGreen);
+    axis1->Draw();
+    TLegend *leg_x=new TLegend(0.2,0.6,0.5,0.9);
+    //leg_x->SetNColumns(3);
+    leg_x->AddEntry(hall_x,"All","l");
+    leg_x->AddEntry(hsingle_x,"Single","l");
+    leg_x->AddEntry(hdiff_x,"Single/All","l");
+    leg_x->Draw();
+
+    can->cd(2);
+    gPad->SetLogy();
+    tree_hitnum->Draw("hitid_y>>hall_y");
+    tree_hitnum->Draw("hitid_y[0]>>hsingle_y","hitnum_y==1","same");
+    //gPad->BuildLegend();
+    hdiff_y=(TH1F*)hsingle_y->Clone("hdiff_y");
+    hdiff_y->SetLineColor(kGreen);hdiff_y->SetLineWidth(2);hdiff_y->SetLineStyle(5);hdiff_y->SetFillStyle(3005);hdiff_y->SetFillColor(kGreen);
+    hdiff_y->Divide(hall_y);
+    TPad* pad2=new TPad("pad2","",0,0,1,1);
+    pad2->SetFillStyle(4000);
+    pad2->Range(xmin-0.1*dx,ymin-0.1*dy,xmax+0.1*dx,ymax+0.1*dy);
+    pad2->Draw();
+    pad2->cd();
+    hdiff_y->Draw("][sames");
+    TGaxis *axis2 = new TGaxis(xmax,ymin,xmax,ymax,ymin,ymax,50510,"+L");
+    axis2->SetLabelColor(kGreen);
+    axis2->Draw();
+    TLegend *leg_y=new TLegend(0.2,0.6,0.5,0.9);
+    //leg_x->SetNColumns(3);
+    leg_y->AddEntry(hall_y,"All","l");
+    leg_y->AddEntry(hsingle_y,"Single","l");
+    leg_y->AddEntry(hdiff_y,"Single/All","l");
+    leg_y->Draw();
+
+    can->Print(Form("%s/back_sca.eps",outDir.Data()));
+    delete can;
+    delete file_in;
+}
+
+void bt_draw_singlechannel(const char* psdfile,Int_t chid_x=25,Int_t chid_y=25,Int_t limit=5)
+{
+    gStyle->SetOptStat(0);
+
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+    //------------------------------------------
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    Int_t hitnum_x,hitnum_y;
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    TTree* tree_hitnum=(TTree*)file_in->Get(Form("Analysis/hitnum_%dsigma",limit));
+    tree_hitnum->SetBranchAddress("hitnum_x",&hitnum_x);
+    tree_hitnum->SetBranchAddress("hitnum_y",&hitnum_y);
+    tree_raw->AddFriend(tree_hitnum);
+
+    TH1F* hdy8_xpos_all=new TH1F("hdy8_xpos_all","hdy8_xpos_all",200,-0.5,1999.5);
+    TH1F* hdy8_xneg_all=new TH1F("hdy8_xneg_all","hdy8_xneg_all",200,-0.5,1999.5);
+    TH1F* hdy8_ypos_all=new TH1F("hdy8_ypos_all","hdy8_ypos_all",200,-0.5,1999.5);
+    TH1F* hdy8_yneg_all=new TH1F("hdy8_yneg_all","hdy8_yneg_all",200,-0.5,1999.5);
+    hdy8_xpos_all->SetLineColor(kBlue);
+    hdy8_xneg_all->SetLineColor(kBlue);
+    hdy8_ypos_all->SetLineColor(kBlue);
+    hdy8_yneg_all->SetLineColor(kBlue);
+
+    TH1F* hdy8_xpos_single=new TH1F("hdy8_xpos_single","hdy8_xpos_single",200,-0.5,1999.5);
+    TH1F* hdy8_xneg_single=new TH1F("hdy8_xneg_single","hdy8_xneg_single",200,-0.5,1999.5);
+    TH1F* hdy8_ypos_single=new TH1F("hdy8_ypos_single","hdy8_ypos_single",200,-0.5,1999.5);
+    TH1F* hdy8_yneg_single=new TH1F("hdy8_yneg_single","hdy8_yneg_single",200,-0.5,1999.5);
+    hdy8_xpos_single->SetLineColor(kRed);
+    hdy8_xneg_single->SetLineColor(kRed);
+    hdy8_ypos_single->SetLineColor(kRed);
+    hdy8_yneg_single->SetLineColor(kRed);
+
+    TH1F* hdy8_xpos_zero=new TH1F("hdy8_xpos_zero","hdy8_xpos_zero",200,-0.5,1999.5);
+    TH1F* hdy8_xneg_zero=new TH1F("hdy8_xneg_zero","hdy8_xneg_zero",200,-0.5,1999.5);
+    TH1F* hdy8_ypos_zero=new TH1F("hdy8_ypos_zero","hdy8_ypos_zero",200,-0.5,1999.5);
+    TH1F* hdy8_yneg_zero=new TH1F("hdy8_yneg_zero","hdy8_yneg_zero",200,-0.5,1999.5);
+    hdy8_xpos_zero->SetLineColor(kGreen);
+    hdy8_xneg_zero->SetLineColor(kGreen);
+    hdy8_ypos_zero->SetLineColor(kGreen);
+    hdy8_yneg_zero->SetLineColor(kGreen);
+
+    Int_t entries=tree_raw->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+
+        hdy8_xpos_all->Fill(mipbuffer[0][chid_x-1][1]);
+        hdy8_xneg_all->Fill(mipbuffer[1][chid_x-1][1]);
+        hdy8_ypos_all->Fill(mipbuffer[2][chid_y-1][1]);
+        hdy8_yneg_all->Fill(mipbuffer[3][chid_y-1][1]);
+        if(hitnum_x==1){
+            hdy8_xpos_single->Fill(mipbuffer[0][chid_x-1][1]);
+            hdy8_xneg_single->Fill(mipbuffer[1][chid_x-1][1]);
+        }
+
+        if(hitnum_y==1){
+            hdy8_ypos_single->Fill(mipbuffer[2][chid_y-1][1]);
+            hdy8_yneg_single->Fill(mipbuffer[3][chid_y-1][1]);
+        }
+
+        if(hitnum_x==0 && hitnum_y==0){
+            hdy8_xpos_zero->Fill(mipbuffer[0][chid_x-1][1]);
+            hdy8_xneg_zero->Fill(mipbuffer[1][chid_x-1][1]);
+            hdy8_ypos_zero->Fill(mipbuffer[2][chid_y-1][1]);
+            hdy8_yneg_zero->Fill(mipbuffer[3][chid_y-1][1]);
+        }
+
+    }
+
+    TLine *line_xpos=new TLine;
+    line_xpos->SetLineColor(kBlack);
+    line_xpos->SetLineWidth(1);
+    TLine *line_xneg=new TLine;
+    line_xneg->SetLineColor(kBlack);
+    line_xneg->SetLineWidth(1);
+    TLine *line_ypos=new TLine;
+    line_ypos->SetLineColor(kBlack);
+    line_ypos->SetLineWidth(1);
+    TLine *line_yneg=new TLine;
+    line_yneg->SetLineColor(kBlack);
+    line_yneg->SetLineWidth(1);
+
+    TCanvas* can_x=new TCanvas("can_x","can_x",800,400);
+    can_x->Divide(2,1);
+    can_x->cd(1);
+    gPad->SetLogy();
+    hdy8_xpos_all->Draw();
+    hdy8_xpos_single->Draw("same");
+    hdy8_xpos_zero->Draw("same");
+    line_xpos->DrawLine(thresh[0][chid_x-1],0,thresh[0][chid_x-1],20000);
+    TLegend* legend_xpos=new TLegend(0.6,0.5,0.9,0.9);
+    legend_xpos->AddEntry(hdy8_xpos_all,"All","l");
+    legend_xpos->AddEntry(hdy8_xpos_single,"Single","l");
+    legend_xpos->AddEntry(hdy8_xpos_zero,"Zero","l");
+    legend_xpos->AddEntry(line_xpos,Form("%d*Sigma",limit),"l");
+    legend_xpos->Draw();
+    hdy8_xpos_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_xpos_all->SetTitle(Form("X%d_Pos",chid_x));
+    //gPad->BuildLegend();
+    can_x->cd(2);
+    gPad->SetLogy();
+    hdy8_xneg_all->Draw();
+    hdy8_xneg_single->Draw("same");
+    hdy8_xneg_zero->Draw("same");
+    line_xneg->DrawLine(thresh[1][chid_x-1],0,thresh[1][chid_x-1],10000);
+    TLegend* legend_xneg=new TLegend(0.6,0.5,0.9,0.9);
+    legend_xneg->AddEntry(hdy8_xneg_all,"All","l");
+    legend_xneg->AddEntry(hdy8_xneg_single,"Single","l");
+    legend_xneg->AddEntry(hdy8_xneg_zero,"Zero","l");
+    legend_xneg->AddEntry(line_xneg,Form("%d*Sigma",limit),"l");
+    legend_xneg->Draw();
+    hdy8_xneg_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_xneg_all->SetTitle(Form("X%d_Neg",chid_x));
+    //gPad->BuildLegend();
+    can_x->Print(Form("%s/mips_compare_%dsigma_x.eps",dir.Data(),limit));
+
+    TCanvas* can_y=new TCanvas("can_y","can_y",800,400);
+    can_y->Divide(2,1);
+    can_y->cd(1);
+    gPad->SetLogy();
+    hdy8_ypos_all->Draw();
+    hdy8_ypos_single->Draw("same");
+    hdy8_ypos_zero->Draw("same");
+    line_ypos->DrawLine(thresh[2][chid_y-1],0,thresh[2][chid_y-1],10000);
+    TLegend* legend_ypos=new TLegend(0.6,0.5,0.9,0.9);
+    legend_ypos->AddEntry(hdy8_ypos_all,"All","l");
+    legend_ypos->AddEntry(hdy8_ypos_single,"Single","l");
+    legend_ypos->AddEntry(hdy8_ypos_zero,"Zero","l");
+    legend_ypos->AddEntry(line_ypos,Form("%d*Sigma",limit),"l");
+    legend_ypos->Draw();
+    hdy8_ypos_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_ypos_all->SetTitle(Form("Y%d_Pos",chid_x));
+    //gPad->BuildLegend();
+    can_y->cd(2);
+    gPad->SetLogy();
+    hdy8_yneg_all->Draw();
+    hdy8_yneg_single->Draw("same");
+    hdy8_yneg_zero->Draw("same");
+    line_yneg->DrawLine(thresh[3][chid_y-1],0,thresh[3][chid_y-1],10000);
+    TLegend* legend_yneg=new TLegend(0.6,0.5,0.9,0.9);
+    legend_yneg->AddEntry(hdy8_yneg_all,"All","l");
+    legend_yneg->AddEntry(hdy8_yneg_single,"Single","l");
+    legend_yneg->AddEntry(hdy8_yneg_zero,"Zero","l");
+    legend_yneg->AddEntry(line_yneg,Form("%d*Sigma",limit),"l");
+    legend_yneg->Draw();
+    hdy8_yneg_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_yneg_all->SetTitle(Form("Y%d_Neg",chid_x));
+    //gPad->BuildLegend();
+    can_y->Print(Form("%s/mips_compare_%dsigma_y.eps",dir.Data(),limit));
+
+    delete line_xpos;delete line_xneg;
+    delete line_ypos;delete line_yneg;
+    delete can_x;delete can_y;
+    delete file_in;
+
+}
+
+void bt_draw_twohits(const char* psdfile,Int_t chid_x=25,Int_t chid_y=25,Int_t limit=5)
+{
+    gStyle->SetOptStat(0);
+
+    TString dir=gSystem->DirName(gSystem->ExpandPathName(psdfile));
+    //----------
+
+    TFile* file_in=new TFile(psdfile);
+
+    Float_t ped_mean[4][41][2],ped_sigma[4][41][2];
+    Float_t thresh[4][41];
+    TTree* tree_ped=(TTree*)file_in->Get("Pedestal/ped_data");
+    tree_ped->SetBranchAddress("ped_mean",ped_mean);
+    tree_ped->SetBranchAddress("ped_sigma",ped_sigma);
+    tree_ped->GetEntry();
+
+    delete tree_ped;
+
+    for(int ch_id=0;ch_id<41;ch_id++){
+        thresh[0][ch_id]=ped_mean[0][ch_id][1]+ped_sigma[0][ch_id][1]*limit;
+        thresh[1][ch_id]=ped_mean[1][ch_id][1]+ped_sigma[1][ch_id][1]*limit;
+        thresh[2][ch_id]=ped_mean[2][ch_id][1]+ped_sigma[2][ch_id][1]*limit;
+        thresh[3][ch_id]=ped_mean[3][ch_id][1]+ped_sigma[3][ch_id][1]*limit;
+    }
+    //------------------------------------------
+    Int_t mipbuffer[4][41][2];//[fee_id][strip_id][dynode_id]
+                                //dynode_id: 0-dy5,1-dy8
+    Int_t hitnum_x,hitnum_y;
+    Int_t hitid_x[41],hitid_y[41];
+
+    TTree* tree_raw=(TTree*)file_in->Get("Raw/raw_data");
+    tree_raw->SetBranchAddress("raw_data",mipbuffer);
+    TTree* tree_hitnum=(TTree*)file_in->Get(Form("Analysis/hitnum_%dsigma",limit));
+    tree_hitnum->SetBranchAddress("hitnum_x",&hitnum_x);
+    tree_hitnum->SetBranchAddress("hitnum_y",&hitnum_y);
+    tree_hitnum->SetBranchAddress("hitid_x",hitid_x);
+    tree_hitnum->SetBranchAddress("hitid_y",hitid_y);
+    tree_raw->AddFriend(tree_hitnum);
+
+    TH1F* hdy8_xpos_all=new TH1F("hdy8_xpos_all","hdy8_xpos_all",300,-0.5,2999.5);
+    TH1F* hdy8_xneg_all=new TH1F("hdy8_xneg_all","hdy8_xneg_all",300,-0.5,2999.5);
+    TH1F* hdy8_ypos_all=new TH1F("hdy8_ypos_all","hdy8_ypos_all",300,-0.5,2999.5);
+    TH1F* hdy8_yneg_all=new TH1F("hdy8_yneg_all","hdy8_yneg_all",300,-0.5,2999.5);
+    hdy8_xpos_all->SetLineColor(kBlue);
+    hdy8_xneg_all->SetLineColor(kBlue);
+    hdy8_ypos_all->SetLineColor(kBlue);
+    hdy8_yneg_all->SetLineColor(kBlue);
+
+    TH1F* hdy8_xpos_single=new TH1F("hdy8_xpos_single","hdy8_xpos_single",300,-0.5,2999.5);
+    TH1F* hdy8_xneg_single=new TH1F("hdy8_xneg_single","hdy8_xneg_single",300,-0.5,2999.5);
+    TH1F* hdy8_ypos_single=new TH1F("hdy8_ypos_single","hdy8_ypos_single",300,-0.5,2999.5);
+    TH1F* hdy8_yneg_single=new TH1F("hdy8_yneg_single","hdy8_yneg_single",300,-0.5,2999.5);
+    hdy8_xpos_single->SetLineColor(kRed);
+    hdy8_xneg_single->SetLineColor(kRed);
+    hdy8_ypos_single->SetLineColor(kRed);
+    hdy8_yneg_single->SetLineColor(kRed);
+
+    TH1F* hdy8_xpos_double=new TH1F("hdy8_xpos_double","hdy8_xpos_double",300,-0.5,2999.5);
+    TH1F* hdy8_xneg_double=new TH1F("hdy8_xneg_double","hdy8_xneg_double",300,-0.5,2999.5);
+    TH1F* hdy8_ypos_double=new TH1F("hdy8_ypos_double","hdy8_ypos_double",300,-0.5,2999.5);
+    TH1F* hdy8_yneg_double=new TH1F("hdy8_yneg_double","hdy8_yneg_double",300,-0.5,2999.5);
+    hdy8_xpos_double->SetLineColor(kBlack);
+    hdy8_xneg_double->SetLineColor(kBlack);
+    hdy8_ypos_double->SetLineColor(kBlack);
+    hdy8_yneg_double->SetLineColor(kBlack);
+
+    Int_t entries=tree_raw->GetEntries();
+    for(int i=0;i<entries;i++){
+        tree_raw->GetEntry(i);
+
+        hdy8_xpos_all->Fill(mipbuffer[0][chid_x-1][1]);
+        hdy8_xneg_all->Fill(mipbuffer[1][chid_x-1][1]);
+        hdy8_ypos_all->Fill(mipbuffer[2][chid_y-1][1]);
+        hdy8_yneg_all->Fill(mipbuffer[3][chid_y-1][1]);
+        if(hitnum_x==1){
+            hdy8_xpos_single->Fill(mipbuffer[0][chid_x-1][1]);
+            hdy8_xneg_single->Fill(mipbuffer[1][chid_x-1][1]);
+            //hdy8_xpos_double->Fill(mipbuffer[0][chid_x-1][1]);
+            //hdy8_xneg_double->Fill(mipbuffer[1][chid_x-1][1]);
+        }
+
+        if(hitnum_y==1){
+            hdy8_ypos_single->Fill(mipbuffer[2][chid_y-1][1]);
+            hdy8_yneg_single->Fill(mipbuffer[3][chid_y-1][1]);
+            //hdy8_ypos_double->Fill(mipbuffer[2][chid_x-1][1]);
+            //hdy8_yneg_double->Fill(mipbuffer[3][chid_x-1][1]);
+        }
+
+        if(hitnum_x==2 && TMath::Abs(hitid_x[0]-hitid_x[1])==1){
+            if(hitid_x[0]==(chid_x-1) || hitid_x[1]==(chid_x-1)){
+                hdy8_xpos_double->Fill(mipbuffer[0][chid_x-1][1]);
+                hdy8_xneg_double->Fill(mipbuffer[1][chid_x-1][1]);
+
+                //hdy8_xpos_single->Fill(mipbuffer[0][chid_x-1][1]);
+                //hdy8_xneg_single->Fill(mipbuffer[1][chid_x-1][1]);
+            }
+        }
+
+        if(hitnum_y==2 && TMath::Abs(hitid_y[0]-hitid_y[1])==1){
+            if(hitid_y[0]==(chid_y-1) || hitid_y[1]==(chid_y-1)){
+                hdy8_ypos_double->Fill(mipbuffer[2][chid_y-1][1]);
+                hdy8_yneg_double->Fill(mipbuffer[3][chid_y-1][1]);
+
+                //hdy8_ypos_single->Fill(mipbuffer[2][chid_y-1][1]);
+                //hdy8_yneg_single->Fill(mipbuffer[3][chid_y-1][1]);
+            }
+        }
+
+    }
+
+    TLine *line_xpos=new TLine;
+    line_xpos->SetLineColor(kGreen);
+    line_xpos->SetLineWidth(1);
+    TLine *line_xneg=new TLine;
+    line_xneg->SetLineColor(kGreen);
+    line_xneg->SetLineWidth(1);
+    TLine *line_ypos=new TLine;
+    line_ypos->SetLineColor(kGreen);
+    line_ypos->SetLineWidth(1);
+    TLine *line_yneg=new TLine;
+    line_yneg->SetLineColor(kGreen);
+    line_yneg->SetLineWidth(1);
+
+    TCanvas* can_x=new TCanvas("can_x","can_x",800,400);
+    can_x->Divide(2,1);
+    can_x->cd(1);
+    gPad->SetLogy();
+    hdy8_xpos_all->Draw();
+    hdy8_xpos_single->Draw("same");
+    hdy8_xpos_double->Draw("same");
+    //line_xpos->DrawLine(thresh[0][chid_x-1],0,thresh[0][chid_x-1],20000);
+    TLegend* legend_xpos=new TLegend(0.6,0.5,0.9,0.9);
+    legend_xpos->AddEntry(hdy8_xpos_all,"All","l");
+    legend_xpos->AddEntry(hdy8_xpos_single,"Single","l");
+    legend_xpos->AddEntry(hdy8_xpos_double,"Double","l");
+    legend_xpos->AddEntry(line_xpos,Form("%d*Sigma",limit),"l");
+    legend_xpos->Draw();
+    hdy8_xpos_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_xpos_all->SetTitle(Form("X%d_Pos",chid_x));
+    //gPad->BuildLegend();
+    can_x->cd(2);
+    gPad->SetLogy();
+    hdy8_xneg_all->Draw();
+    hdy8_xneg_single->Draw("same");
+    hdy8_xneg_double->Draw("same");
+    //line_xneg->DrawLine(thresh[1][chid_x-1],0,thresh[1][chid_x-1],10000);
+    TLegend* legend_xneg=new TLegend(0.6,0.5,0.9,0.9);
+    legend_xneg->AddEntry(hdy8_xneg_all,"All","l");
+    legend_xneg->AddEntry(hdy8_xneg_single,"Single","l");
+    legend_xneg->AddEntry(hdy8_xneg_double,"Double","l");
+    legend_xneg->AddEntry(line_xneg,Form("%d*Sigma",limit),"l");
+    legend_xneg->Draw();
+    hdy8_xneg_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_xneg_all->SetTitle(Form("X%d_Neg",chid_x));
+    //gPad->BuildLegend();
+    can_x->Print(Form("%s/mips_twohits_%dsigma_x.eps",dir.Data(),limit));
+
+    TCanvas* can_y=new TCanvas("can_y","can_y",800,400);
+    can_y->Divide(2,1);
+    can_y->cd(1);
+    gPad->SetLogy();
+    hdy8_ypos_all->Draw();
+    hdy8_ypos_single->Draw("same");
+    hdy8_ypos_double->Draw("same");
+    //line_ypos->DrawLine(thresh[2][chid_y-1],0,thresh[2][chid_y-1],10000);
+    TLegend* legend_ypos=new TLegend(0.6,0.5,0.9,0.9);
+    legend_ypos->AddEntry(hdy8_ypos_all,"All","l");
+    legend_ypos->AddEntry(hdy8_ypos_single,"Single","l");
+    legend_ypos->AddEntry(hdy8_ypos_double,"Double","l");
+    legend_ypos->AddEntry(line_ypos,Form("%d*Sigma",limit),"l");
+    legend_ypos->Draw();
+    hdy8_ypos_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_ypos_all->SetTitle(Form("Y%d_Pos",chid_x));
+    //gPad->BuildLegend();
+    can_y->cd(2);
+    gPad->SetLogy();
+    hdy8_yneg_all->Draw();
+    hdy8_yneg_single->Draw("same");
+    hdy8_yneg_double->Draw("same");
+    //line_yneg->DrawLine(thresh[3][chid_y-1],0,thresh[3][chid_y-1],10000);
+    TLegend* legend_yneg=new TLegend(0.6,0.5,0.9,0.9);
+    legend_yneg->AddEntry(hdy8_yneg_all,"All","l");
+    legend_yneg->AddEntry(hdy8_yneg_single,"Single","l");
+    legend_yneg->AddEntry(hdy8_yneg_double,"Double","l");
+    legend_yneg->AddEntry(line_yneg,Form("%d*Sigma",limit),"l");
+    legend_yneg->Draw();
+    hdy8_yneg_all->GetXaxis()->SetTitle("ADC counts");
+    hdy8_yneg_all->SetTitle(Form("Y%d_Neg",chid_x));
+    //gPad->BuildLegend();
+    can_y->Print(Form("%s/mips_twohits_%dsigma_y.eps",dir.Data(),limit));
+
+    delete line_xpos;delete line_xneg;
+    delete line_ypos;delete line_yneg;
+    delete can_x;delete can_y;
+    delete file_in;
 
 }

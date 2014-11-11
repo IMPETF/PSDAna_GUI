@@ -2551,6 +2551,7 @@ void GuiFrame::OnSciAnalyze()
     TString refDirName,refBaseName;
     TString prefix;
     TString newped_filename;
+    TString tempstr;
 
     //---analyze--
     FILE* fp;
@@ -2616,7 +2617,11 @@ void GuiFrame::OnSciAnalyze()
         draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
         fit_dy58(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"dy58");
         draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
-        draw_hitnum(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"hit.root");
+        extract_psd(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"analysis.root");
+        tempstr=outputDirName+"analysis.root";
+        draw_hitnum(tempstr.Data(),"hit",7);
+        bt_draw_meangeo(tempstr.Data());
+        bt_efficiency(tempstr.Data(),25,25,7);
         break;
     default:
         break;
