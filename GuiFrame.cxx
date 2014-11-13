@@ -2619,9 +2619,9 @@ void GuiFrame::OnSciAnalyze()
         draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
         extract_psd(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"analysis.root");
         tempstr=outputDirName+"analysis.root";
-        draw_hitnum(tempstr.Data(),"hit",7);
+        draw_hitnum(tempstr.Data(),"hit",5);
         bt_draw_meangeo(tempstr.Data());
-        bt_efficiency(tempstr.Data(),25,25,7);
+        bt_efficiency(tempstr.Data(),25,25,5);
         break;
     default:
         break;
