@@ -277,6 +277,190 @@ TF1* pedfit(TH1F* poHist,float ped_mean,float ped_sigma,float& pedout_mean,float
 }
 
 /*********   This part is for PSD Nanjing testing. There are 4 FEEs  *************/
+int convert_eventblock(char* data,Int_t *Xpos,Int_t *Ypos,Int_t *Xneg,Int_t *Yneg)
+{
+    //printf("in burst\n");
+    const Int_t FEE[4]={0x20,0x24,0x28,0x2c};
+    Int_t* tmp[4];
+    tmp[0]=Xpos;
+    tmp[1]=Xneg;
+    tmp[2]=Ypos;
+    tmp[3]=Yneg;
+    const int data_length=186;
+    const int block_length=194;
+    unsigned char* burst=(unsigned char*)data;
+
+    int read_length=0;
+    int trig_couter[4];
+    int trig_status[4];
+    int init=0;
+    for(int feeid=0;feeid<4;feeid++){
+        init=feeid*block_length;
+        if(burst[init]==0x55 && burst[init+1]==0xaa && burst[init+2]==0xeb && burst[init+3]==0x90
+                && burst[init+192]==0x5a && burst[init+193]==0xa5){
+            if(burst[init+5]==FEE[feeid]){
+                read_length=((burst[init+6]&0xFF)<<8) + (burst[init+7]&0xFF);
+                if(read_length != data_length){
+                    printf("error! wrong data length %d != %d \n",read_length,data_length);
+                    return -1;
+                }
+                for(int data_id=0;data_id<90;data_id++){
+                    tmp[feeid][data_id]=((burst[init+8+data_id*2]&0xFF)<<8) + (burst[init+8+data_id*2+1]&0xFF);
+                    if(tmp[feeid][data_id]==0){
+                        tmp[feeid][data_id] = -5;
+                    }
+                    else if(tmp[feeid][data_id] > 0x3FFF){
+                        tmp[feeid][data_id] = 16400;
+                    }
+                }
+                trig_couter[feeid] = ((burst[init+188]&0xF)<<8) + (burst[init+189]);
+                trig_status[feeid] = burst[init+188]>>4;
+            }
+            else
+            {
+
+                printf("error! wrong sequence in a burst\n");
+
+                return -1;
+            }
+        }
+        else{
+            printf("error! incomplete block\n");
+            return -1;
+        }
+    }
+
+   // printf("%d %d %d %d\n",trig_couter[0],trig_couter[1],trig_couter[2],trig_couter[3]);
+    if((trig_couter[0] != trig_couter[1]) || (trig_couter[0] != trig_couter[2]) || (trig_couter[0] != trig_couter[3]) ){
+        printf("error! inconsistent trigger count in a burst");
+        printf("trigger_id:%d %d %d %d\n",trig_couter[0],trig_couter[1],trig_couter[2],trig_couter[3]);
+        printf("trigger_status:%d %d %d %d\n",trig_status[0],trig_status[1],trig_status[2],trig_status[3]);
+        return -1;
+    }
+
+    return 0;
+}
+
+int convert_event(const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t *outfile="raw.root")
+{
+
+    const Int_t FEE[4]={0x20,0x24,0x28,0x2c};
+    const Int_t block_length=194;
+
+    Char_t infname[200],outfname[200];
+    sprintf(infname,"%s/%s",parentDir,infile);
+    sprintf(outfname,"%s/%s",outDir,outfile);
+
+    TFile *f=new TFile(outfname,"RECREATE");
+    if(f->IsZombie()){
+        printf("this file will not been recreated!\n");
+        delete f;
+        return -1;
+    }
+    else if(f->IsOpen()){
+        ifstream in;
+        in.open(infname,std::ios_base::in | std::ios_base::binary);
+        if(!in.is_open()){
+            std::cout << "can't open"<< infname << std::endl;
+        }
+
+//-----------------------------------------------------------------------
+        int Ch_tmp1,Ch_tmp2;
+        unsigned char x;
+
+        TH1F *hxpos[90];
+        TH1F *hxneg[90];
+        TH1F *hypos[90];
+        TH1F *hyneg[90];
+        for(int i=0;i<90;i++){
+            hxpos[i]=new TH1F(Form("xpos_%d",i+1),Form("xpos_%d",i+1),4000,0,4000);
+            hxneg[i]=new TH1F(Form("xneg_%d",i+1),Form("xneg_%d",i+1),4000,0,4000);
+            hypos[i]=new TH1F(Form("ypos_%d",i+1),Form("ypos_%d",i+1),4000,0,4000);
+            hyneg[i]=new TH1F(Form("yneg_%d",i+1),Form("yneg_%d",i+1),4000,0,4000);
+        }
+
+        TTree *tree = new TTree("PSD","PSD Testing event mode");
+        Int_t Xpos[90],Ypos[90],Xneg[90],Yneg[90];
+        tree->Branch("xpos",Xpos,"xpos[90]/I");
+        tree->Branch("ypos",Ypos,"ypos[90]/I");
+        tree->Branch("xneg",Xneg,"xneg[90]/I");
+        tree->Branch("yneg",Yneg,"yneg[90]/I");
+//-----------------------delete head incomplete burst-------------------------
+        Int_t Length=0;
+        Int_t fDelHead=0;
+        while((!in.eof()) && (fDelHead == 0))
+        {
+            //printf("in delete head\n");
+            x=in.get();
+            if(x==0x55){
+                x=in.get();
+                if(x==0xaa){
+                    x=in.get();
+                    if(x==0xeb){
+                        x=in.get();
+                        if(x==0x90){
+                            x=in.get();
+                            x=in.get();
+                            //printf("in %d\n",x);
+                            if(x==FEE[3]){
+                                //printf("in match\n");
+                                fDelHead=1;
+                            }
+                            x=in.get();
+                            Ch_tmp2=((x&0x00ff)<<8);
+                            x=in.get();
+                            Ch_tmp1=(x&0x00ff);
+                            Length=Ch_tmp1+Ch_tmp2;
+                            //printf("length %d\n",Length);
+                            Int_t flength=Length;
+                            for(Int_t i=0;i<flength;i++){
+                                x=in.get();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+//----------------------------------------------------------------------------------------
+    unsigned int event_num=0;
+    char burst_block[block_length*4];
+    while(!in.eof()){
+        //printf("test");
+        in.read(burst_block,block_length*4);
+        if(!in.eof()){
+            int error_flag=convert_eventblock(burst_block,Xpos,Ypos,Xneg,Yneg);
+            if(error_flag == -1){
+                break;
+            }
+            else{
+                event_num++;
+                for(int i=0;i<90;i++){
+                    hxpos[i]->Fill(Xpos[i]);
+                    hypos[i]->Fill(Ypos[i]);
+                    hxneg[i]->Fill(Xneg[i]);
+                    hyneg[i]->Fill(Yneg[i]);
+                }
+                tree->Fill();
+            }
+        }
+        else{
+            break;
+        }
+    }
+    std::cout<< event_num <<" events converted totally!"<<std::endl;
+
+    in.close();
+    f->Write(0,TObject::kOverwrite);//overwrite AutoSave keys
+    f->Close();
+    delete f;
+  }
+  else{
+    printf("error: %s can not be created!\n",outfile);
+    delete f;
+    return -1;
+  }
+    return 0;
+}
 
 //---Method 1:convert each event block, synchronization between FEEs----------------------------------------------------------------------------
 int convert_normalblock(char* data,Int_t *Xpos,Int_t *Ypos,Int_t *Xneg,Int_t *Yneg)
@@ -541,6 +725,9 @@ int convert_compressed(const Char_t* parentDir,const Char_t* infile,const Char_t
     char burst_block[packet_length];
     while(!in.eof()){
         //printf("test");
+        for(int i=0;i<4;i++){
+
+        }
         in.read(burst_block,packet_length);
         if(!in.eof()){
             int error_flag=convert_compressedblock(burst_block,Xpos,Ypos,Xneg,Yneg);
@@ -826,11 +1013,11 @@ int convert_feeblock(char* data,int remaining_length,int& expected_length,int& t
 {
     unsigned char* block=(unsigned char*)data;
     int channel_num,ch_id;
-    if(block[0]==0xeb && block[1]==0x90){
-        status_code = block[2];
-        fee_id = block[3]&0xF;
-        type_id = block[3]&0xF0;
-        expected_length = (block[4]<<8)+block[5]+4;//data_length+header
+    if(block[0]==0x55 && block[1]==0xaa && block[2]==0xeb && block[3]==0x90){
+        status_code = block[4];
+        fee_id = block[5]&0xF;
+        type_id = block[5]&0xF0;
+        expected_length = (block[6]<<8)+block[7]+8;//data_length+header
         if(expected_length > remaining_length){
             printf("error!less bytes found than expected\n");
             return -2;
@@ -838,52 +1025,57 @@ int convert_feeblock(char* data,int remaining_length,int& expected_length,int& t
         switch(type_id)
         {
         case 0x20://normal
-            if(expected_length!=190){
+            if(expected_length!=194){
                 printf("error! wrong data_length in a normal block\n");
                 return -1;
             }
             for(int i=0;i<90;i++){
-                buffer[i]=(block[6+2*i]<<8)+block[6+2*i+1];
+                buffer[i]=(block[8+2*i]<<8)+block[8+2*i+1];
                 if(buffer[i]>0x3FFF){
                     buffer[i]=16400;
                 }
             }
-            trigger_counter = ((block[186]&0xF)<<8) + (block[187]);
-            trigger_status =block[186]>>4;
+            trigger_counter = ((block[188]&0xF)<<8) + (block[189]);
+            trigger_status =block[188]>>4;
             break;
         case 0x60://compressed
-            channel_num=(expected_length-10)/3;
+            channel_num=(expected_length-14)/3;
             for(int i=0;i<channel_num;i++){
-                ch_id=block[6+3*i];
-                buffer[ch_id]=(block[6+3*i+1]<<8)+block[6+3*i+2];
+                ch_id=block[8+3*i];
+                buffer[ch_id]=(block[8+3*i+1]<<8)+block[8+3*i+2];
                 if(buffer[ch_id]>0x3FFF){
                     buffer[ch_id]=16400;
                 }
             }
-            trigger_counter = ((block[expected_length-4]&0xF)<<8) + block[expected_length-3];
-            trigger_status = block[expected_length-4]>>4;
+            trigger_counter = ((block[expected_length-6]&0xF)<<8) + block[expected_length-5];
+            trigger_status = block[expected_length-6]>>4;
             break;
         case 0xa0://calibration
-            if(expected_length!=190){
+            if(expected_length!=194){
                 printf("error! wrong data_length in a calibration block\n");
                 return -1;
             }
             for(int i=0;i<90;i++){
-                buffer[i]=(block[6+2*i]<<8)+block[6+2*i+1];
+                buffer[i]=(block[8+2*i]<<8)+block[8+2*i+1];
                 if(buffer[i]>0x3FFF){
                     buffer[i]=16400;
                 }
             }
-            trigger_counter = ((block[186]&0xF)<<8) + (block[187]);
-            trigger_status =block[186]>>4;
+            trigger_counter = ((block[188]&0xF)<<8) + (block[189]);
+            trigger_status =block[188]>>4;
             break;
         default:
             printf("error! not a valid type_id(FEE_typeid = 0x%x)\n",type_id);
             return -3;
         }
+        //
+        if(block[expected_length-2]!=0x5a || block[expected_length-1]!=0xa5){
+	  printf("error! This is not a valid block trailer(0x5a a5!= 0x%x %x)\n",block[expected_length-2],block[expected_length-1]);
+	  return -1;
+	}
     }
     else{
-        printf("error! This is not a valid block header(0xEB90 != 0x%x%x)\n",block[0],block[1]);
+        printf("error! This is not a valid block header(0x55 aa eb 90 != 0x%x %x %x %x)\n",block[0],block[1],block[2],block[3]);
         return -1;
     }
 
@@ -893,7 +1085,6 @@ int convert_feeblock(char* data,int remaining_length,int& expected_length,int& t
 int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int_t& type_id,Int_t* actual_trigger_id,Int_t* actual_trigger_status,UShort_t* actual_status_code,Int_t *Xpos,Int_t *Ypos,Int_t *Xneg,Int_t *Yneg)
 {
     const int FEEID[4]={0x0,0x8,0x4,0xc};//+X,+Y,-X,-Y
-    const int DATATYPE[4]={0x20,0x60,0xa0};//type_id need to be one of them:normal,compressed,calibration
 
     //default value,if the FEE do not exist in this packet
     std::fill_n(Xpos,90,-5);
@@ -911,7 +1102,6 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
     int buffer[90];
     int remaining_length,expected_length;
     UShort_t tmp_status_code;
-    int fee_num=0;
 
     int flag;
     char* next_data;
@@ -924,9 +1114,7 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
             return -1;
         }
         else if(flag==0){
-            fee_num++;
             remaining_length-=expected_length;
-            actual_typeid[fee_num-1]=tmp_typeid;
             switch(tmp_feeid)
             {
             case 0x0:
@@ -936,6 +1124,7 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
                 actual_trigger_id[0]=tmp_trigger_id;
                 actual_trigger_status[0]=tmp_trigger_status;
                 actual_status_code[0]=tmp_status_code;
+		actual_typeid[0]=tmp_typeid;
                 break;
             case 0x8:
                 for(int i=0;i<90;i++){
@@ -944,6 +1133,7 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
                 actual_trigger_id[1]=tmp_trigger_id;
                 actual_trigger_status[1]=tmp_trigger_status;
                 actual_status_code[1]=tmp_status_code;
+		actual_typeid[1]=tmp_typeid;
                 break;
             case 0x4:
                 for(int i=0;i<90;i++){
@@ -952,6 +1142,7 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
                 actual_trigger_id[2]=tmp_trigger_id;
                 actual_trigger_status[2]=tmp_trigger_status;
                 actual_status_code[2]=tmp_status_code;
+		actual_typeid[2]=tmp_typeid;
                 break;
             case 0xc:
                 for(int i=0;i<90;i++){
@@ -960,6 +1151,7 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
                 actual_trigger_id[3]=tmp_trigger_id;
                 actual_trigger_status[3]=tmp_trigger_status;
                 actual_status_code[3]=tmp_status_code;
+		actual_typeid[3]=tmp_typeid;
                 break;
             default:
                 return -1;
@@ -967,29 +1159,23 @@ int convert_psd_packet_scidata(bool minimum_flag,char* data,int total_length,Int
         }
     }
 
-    if(fee_num == 0){
-        printf("error! this patch don't contain any PSD_FEE data!\n");
-        return -1;
+    if(!minimum_flag){
+      for(int i=1;i<4;i++){
+	if(actual_typeid[0] != actual_typeid[i]){
+	  printf("error! unmatched type_id in a single packet\n");
+          return -1;
+        }
+      }
+      type_id=actual_typeid[0];
     }
     else{
-        if(!minimum_flag){
-            for(int i=1;i<fee_num;i++){
-                if(actual_typeid[0] != actual_typeid[i]){
-                    printf("error! unmatched type_id in a single packet\n");
-                    return -1;
-                }
-            }
-            type_id=actual_typeid[0];
+      for(int i=0;i<4;i++){
+	if((actual_typeid[i])!=0x20 && (actual_typeid[i]!=0x60)){
+	  printf("error! unidetified type_id(0x%x) in this packet\n",actual_typeid[i]);
+          return -1;
         }
-        else{
-            for(int i=0;i<fee_num;i++){
-                if((actual_typeid[i])!=0x20 && (actual_typeid[i]!=0x60)){
-                    printf("error! unidetified type_id(0x%x) in this packet\n",actual_typeid[i]);
-                    return -1;
-                }
-            }
-            type_id=0x30;//minimum_mode
-        }
+      }
+      type_id=0x30;//minimum_mode
     }
 
     return 0;
@@ -1023,7 +1209,7 @@ int check_triggerstatus(Int_t* trigger_status,unsigned int packet_num=-1,bool ve
             if(trigger_status[i] == 0x2){
                 if(verbose){
                     if(!flag){
-                        printf("packet %u:\n",packet_num);
+                        printf("event %u:\n",packet_num);
                         flag=1;
                     }
                     printf("\twarning: FEE_%s trigger status error in this packet\n",fee_id[i]);
@@ -1092,97 +1278,57 @@ int get_decodedfee(Int_t* trigger_id,Int_t* flag)
     //return value: 0:a complete packet has been found,1:the last packet will be either complete or not   2:the last packet is definitely incomplete,-1:error occured,3:no byte read,eof reached
 int find_nextheader(std::ifstream& in,int& packet_length)
 {
-    const char HEADER[4]={0xe2,0x25,0x08,0x13};
+    const char HEADER[4]={0x55,0xaa,0xeb,0x90};
+    const char TRAILER[2]={0x5a,0xa5};
     std::streampos init_pos;
     init_pos=in.tellg();
     packet_length=0;
 
     int count;
+    int data_length;
     char tmp[4];
     std::fill_n(tmp,4,0);
     in.read(tmp,4);
-    count=in.gcount();
     if(in.eof()){
-        if(count){
-            in.clear();
-            if(!memcmp(HEADER,tmp,count)){
-                packet_length=count;
-                printf("the last packet has incomplete header,no content\n");
-                in.seekg(init_pos);
-                return 2;
-            }
-            else{
-                packet_length=count;
-                printf("the last packet has wrong header,no content\n");
-                in.seekg(init_pos);
-                return 2;
-            }
-        }
-        else{
-            printf("end of file reached\n");
-            return 3;
-        }
+      printf("eof\n");
+      return 3;
     }
-    else {
-        if(!memcmp(HEADER,tmp,4)){
-            packet_length+=4;
-        }
-        else{
-            in.seekg(-3,in.cur);
-            packet_length+=1;
-        }
+    else if(memcmp(HEADER,tmp,4)){
+      return -1;
     }
-
-    while(in.read(tmp,4)){
-        if(!memcmp(HEADER,tmp,4)){
-            in.seekg(init_pos);
-            return 0;
-        }
-        else{
-            in.seekg(-3,in.cur);
-            packet_length++;
-        }
+    packet_length+=4;
+    //in.seekg(init_pos);
+    //
+    for(int i=0;i<4;i++){
+      in.ignore(2);
+      packet_length+=2;
+      //
+      in.read(tmp,2);
+      packet_length+=2;
+      data_length=((tmp[0]&0xff)<<8)+(tmp[1]&0xFF);
+      //
+      in.ignore(data_length);
+      packet_length+=data_length;
+      //
+      if(i!=3){
+	in.read(tmp,4);
+	if(!in.good()){
+	  return -1;
+	}
+	//
+	if(memcmp(HEADER,tmp,4)){
+	  return -1;
+	}
+	packet_length+=4;
+      }
+      else if(!in.good() && !in.eof()){
+	  return -1;
+      }
     }
-
-    if(in.eof()){
-        count=in.gcount();
-        in.clear();
-        if(count<3){
-            packet_length+=count;
-            in.seekg(init_pos);
-            printf("the last packet has right header,but the content is definitely incomplete\n");
-            return 2;
-        }
-        else{
-            if(!memcmp(HEADER,tmp,3)){
-                in.seekg(init_pos);
-                return 0;
-            }
-            else if(!memcmp(HEADER,tmp+1,2)){
-                packet_length+=1;
-                in.seekg(init_pos);
-                return 0;
-            }
-            else if(!memcmp(HEADER,tmp+2,1)){
-                packet_length+=2;
-                in.seekg(init_pos);
-                return 0;
-            }
-            else{
-                packet_length+=3;
-                in.seekg(init_pos);
-                printf("the last packet has right header,but the content maybe incomplete(can't find next header)\n");
-                return 1;
-            }
-        }
-    }
-    else{
-        printf("fatal error!an error occured in reading the file:");
-        //in.seekg(init_pos);
-        //exit(EXIT_FAILURE);
-         return -1;
-    }
-
+    //
+    in.seekg(init_pos);
+    
+    return 0;
 }
 
 int find_nextheader_u(std::ifstream& in,int& packet_length,const char* HEADER,int header_length)
@@ -1528,14 +1674,14 @@ char* convert_timecodeTodate(UInt_t timecode)
 }
 
 //---you need to decode the header in the main decoding function---------------------------------------
-int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="raw.root",const char *start_date=0,const char* stop_date=0)
+int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,const Char_t* infile,const Char_t* outDir,const Char_t* outfile="raw.root")
 {
-    bool minimum_flag;
+    bool smaller_mode=false;
+    if(datatype == 0x30){
+      smaller_mode=true;
+    }
     int trigger_id_before=0;
     int trigger_id_current=0;
-    const char HEADER[4]={0xe2,0x25,0x08,0x13};//science data application id
-    const int TYPEID[4]={0x20,0x60,0xa0,0x30};//normal,compressed,calibration,smaller
-    const Int_t header_length=2+6+8;//E225+PrimaryHeader+SecondaryHeader
 
     Char_t infname[400],outfname[400];
     sprintf(infname,"%s/%s",parentDir,infile);
@@ -1583,179 +1729,84 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
         Int_t Xpos[90],Ypos[90],Xneg[90],Yneg[90];
         int trigger_id[4],trigger_status[4],packet_id;
         UShort_t status_code[4];
-        UShort_t error_code;
-        ULong64_t packet_num;
-        UInt_t time_second;
-        UShort_t time_millisecond;
         tree->Branch("xpos",Xpos,"xpos[90]/I");
         tree->Branch("ypos",Ypos,"ypos[90]/I");
         tree->Branch("xneg",Xneg,"xneg[90]/I");
         tree->Branch("yneg",Yneg,"yneg[90]/I");
         tree->Branch("trigger_id",trigger_id,"trigger_id[4]/I");
         tree->Branch("trigger_status",trigger_status,"trigger_status[4]/I");
-        tree->Branch("packet_id",&packet_id,"packet_id/I");
-        tree->Branch("time_second",&time_second,"time_second/i");
-        tree->Branch("time_millisecond",&time_millisecond,"time_millisecond/s");
-        tree->Branch("error_code",&error_code,"error_code/s");
         tree->Branch("status_code",status_code,"status_code[4]/s");
-        tree->Branch("packet_num",&packet_num,"packet_num/l");
 //----------------------------------------------------------------------------------------
-    unsigned int total_event_num=0;
     unsigned int event_num=0;
-    packet_num=0;
-    unsigned int init_packet_num=0;
-    bool init_packet_flag=false;
-    UInt_t start_timecode,stop_timecode;
-    if(start_date && stop_date){
-        start_timecode=convert_dateTotimecode(start_date);
-        stop_timecode=convert_dateTotimecode(stop_date);
-    }
-    else{
-        start_timecode=-1;
-        stop_timecode=-1;
-    }
-    unsigned int unprocessed_num=0;
+
     int type_id;
-    char tmp[4];
-    char packet_buffer[1000];
+    char packet_buffer[1024];
     int error_flag,packet_length,event_flag;
-    //--if the file header has a incomplete packet,this packet will not be processed.
+
     fprintf(fp,"\tStart Converting:\n");
-    if(in.read(tmp,4)){
-        if(!memcmp(HEADER,tmp,4)){
-            in.seekg(0,in.beg);
-        }
-        else{
-            unprocessed_num++;
-            packet_num++;
-            fprintf(fp,"\tpacket_%d not processed: first packet is incomplete\n",packet_num);
-            in.seekg(0,in.beg);
-            error_flag=find_nextheader(in,packet_length);
-            if(error_flag == -1){
-                fprintf(fp,"\terror! reading first packet\n");
-                exit(EXIT_FAILURE);
-            }
-            in.read(packet_buffer,packet_length);
-        }
-    }
-    //--the last packet will not be processed,whether complete or not
     while(!in.eof()){
         error_flag=find_nextheader(in,packet_length);
-        if(error_flag == 3){
-            //no bytes available in the input stream,eof reached
-            //i.e. the previous read has already get all the bytes in the file
-            continue;
-        }
-        else if(error_flag == -1){
-            fprintf(fp,"\tpacket_num=%d,event_num=%d,has been processed successfully\n",packet_num,event_num);
+	//printf("error_flag=%d\n",error_flag);
+        if(error_flag == -1){
+            fprintf(fp,"\tevent_num=%d,has been processed successfully\n",event_num);
             exit(EXIT_FAILURE);
         }
         else{
-            packet_num++;
-            if(packet_num%3000==0)
+            
+            if(event_num%3000==0)
             {
-                printf("%d packets converted!\n",packet_num);
+                printf("%d events converted!\n",event_num);
             }
             in.read(packet_buffer,packet_length);
             if(error_flag==0){
-                packet_id=((packet_buffer[4]&0x3F)<<8) + (packet_buffer[5]&0xFF);
-                time_second=((packet_buffer[10]&0xFF)<<24)+((packet_buffer[11]&0xFF)<<16)+((packet_buffer[12]&0xFF)<<8)+(packet_buffer[13]&0xFF);
-                time_millisecond=((packet_buffer[14]&0xFF)<<8)+(packet_buffer[15]&0xFF);
+	      event_flag=convert_psd_packet_scidata(smaller_mode,packet_buffer,packet_length,type_id,trigger_id,trigger_status,status_code,Xpos,Ypos,Xneg,Yneg);
+              if(!event_flag){
+		if(type_id == datatype){
+		  event_num++;
+                  for(int i=0;i<90;i++){
+		    hxpos[i]->Fill(Xpos[i]);
+                    hypos[i]->Fill(Ypos[i]);
+                    hxneg[i]->Fill(Xneg[i]);
+                    hyneg[i]->Fill(Yneg[i]);
+                  }
+                  tree->Fill();
 
-                if((start_timecode==-1 && stop_timecode==-1) || ((start_timecode <= time_second) && (stop_timecode >= time_second))){
-                    if(!init_packet_flag){
-                        init_packet_num=packet_num;
-                        init_packet_flag=true;
+                  //check all the status code
+                  //and print out the warnings
+                  if(check_triggerid(trigger_id)){
+		    fprintf(fp,"\tevent %d:\n",event_num);
+                    fprintf(fp,"\t\twarning: unmatched trigger_id(xpos=%d,ypos=%d,xneg=%d,yneg=%d) in this event\n",trigger_id[0],trigger_id[1],trigger_id[2],trigger_id[3]);
+                  }
+                  check_triggerstatus(trigger_status,event_num,true);
+                  check_statuscode(status_code,event_num);
+
+                  trigger_id_current=trigger_id[0];
+                  if(trigger_id_before==0xFFF){
+		    trigger_id_before=0;
+                  }
+                  else{
+		    trigger_id_before++;
+                  }
+                  if(event_num>1){
+		    if(trigger_id_before != trigger_id_current){
+		      fprintf(fp,"\tevent %d:\n",event_num);
+                      fprintf(fp,"\tincontinuous trigger_id in this event(%d,%d)\n",trigger_id_before,trigger_id_current);
                     }
-                    if(datatype==0x30){
-                        minimum_flag=true;
-                        event_flag=convert_psd_packet_scidata(minimum_flag,packet_buffer+header_length,packet_length-header_length,type_id,trigger_id,trigger_status,status_code,Xpos,Ypos,Xneg,Yneg);
-                    }
-                    else{
-                        minimum_flag=false;
-                        event_flag=convert_psd_packet_scidata(minimum_flag,packet_buffer+header_length,packet_length-header_length,type_id,trigger_id,trigger_status,status_code,Xpos,Ypos,Xneg,Yneg);
-                    }
-                    error_code=event_flag;
-                    if(!event_flag){
-                        total_event_num++;
-                        if(type_id == datatype){
-                            event_num++;
-                            for(int i=0;i<90;i++){
-                                hxpos[i]->Fill(Xpos[i]);
-                                hypos[i]->Fill(Ypos[i]);
-                                hxneg[i]->Fill(Xneg[i]);
-                                hyneg[i]->Fill(Yneg[i]);
-                            }
-                            tree->Fill();
-
-                            //check all the status code
-                            //and print out the warnings
-                            if(check_triggerid(trigger_id)){
-                                fprintf(fp,"\tpacket %d:\n",packet_num);
-                                fprintf(fp,"\t\twarning: unmatched trigger_id in this packet\n");
-                            }
-                            check_triggerstatus(trigger_status,packet_num,true);
-                            check_statuscode(status_code,packet_num);
-
-                            trigger_id_current=trigger_id[0];
-                            if(trigger_id_before==0xFFF){
-                                trigger_id_before=0;
-                            }
-                            else{
-                                trigger_id_before++;
-                            }
-                            if(packet_num>init_packet_num){
-                                if(trigger_id_before != trigger_id_current){
-                                    fprintf(fp,"\tpacket %d:\n",packet_num);
-                                    fprintf(fp,"\tincontinuous trigger_id in this packet(%d,%d)\n",trigger_id_before,trigger_id_current);
-                                }
-                            }
-                            trigger_id_before=trigger_id_current;
-
-                            //--
-                            /*
-                            if(event_num%3000==0)
-                            {
-                                printf("%d events converted!\n",event_num);
-                            }
-                            */
-                        }
-                    }
-                    else{
-                        unprocessed_num++;
-                        fprintf(fp,"\tpacket_%d not processed: bad event data,default value will be filled\n",packet_num);
-
-                        for(int i=0;i<90;i++){
-                            hxpos[i]->Fill(Xpos[i]);
-                            hypos[i]->Fill(Ypos[i]);
-                            hxneg[i]->Fill(Xneg[i]);
-                            hyneg[i]->Fill(Yneg[i]);
-                        }
-                        tree->Fill();
-
-                        continue;
-                    }
-                }
+                  }
+                  trigger_id_before=trigger_id_current;
+              }
             }
-            else{
-                //by default,the last packet will not be processed
-                unprocessed_num++;
-                fprintf(fp,"\tpacket_%d not processed: the last packet\n",packet_num);
-            }
+          }
         }
-    }
-
+      }
+    
+    printf("totally,%d events converted\n",event_num);
     fprintf(fp,"\tConverting End:\n");
-    fprintf(fp,"\tTotally,%d packets has been found.\n",packet_num);
-    fprintf(fp,"\t%d of them are not processed\n",unprocessed_num);
-    fprintf(fp,"\tTotally,%d events has been converted successfully which begins at packet_%d.\n",total_event_num,init_packet_num);
-    fprintf(fp,"\t%d of them are 0x%x events\n",event_num,datatype);
+    fprintf(fp,"\tTotally,%d events has been found.\n",event_num);
 
     in.close();
     f->Write(0,TObject::kOverwrite);//overwrite AutoSave keys
     f->Close();
-    //printf("f=%x\n",f);
-    //delete f;
   }
   else{
     fprintf(fp,"\terror: %s can not be created!\n",outfile);
@@ -2140,7 +2191,8 @@ int getpedseed_event(const char* parentDir,const char* infile,const char* outDir
             hist=new TH1F(Form("%s_%d",label[fee_index].Data(),channel),Form("%s_%d",label[fee_index].Data(),channel),300,0,1000);
             tree_in->Project(Form("%s_%d",label[fee_index].Data(),channel),Form("%s[%d]",label[fee_index].Data(),ch_id));
 
-            xpeaks=tmp_mean[ch_id];
+            //xpeaks=tmp_mean[ch_id];
+            xpeaks=hist->GetMean();
             xmin=xpeaks-30;
             xmax=xpeaks+30;
             //xpeaks=hist->GetBinContent(hist->GetMaximumBin());

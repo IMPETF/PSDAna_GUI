@@ -309,7 +309,7 @@ TGMainFrame(p, w, h, kHorizontalFrame)
             new TGRadioButton(fHBG_mode,"Smaller",kB_smaller);
         fHBG_mode->SetButton(kB_normal);
         fHBG_mode->Connect("Pressed(Int_t)","GuiFrame",this,"OnModeConfig(Int_t)");
-        fHBG_mode->SetState(kFALSE);
+        //fHBG_mode->SetState(kFALSE);
         fFScidataPanel->AddFrame(fHBG_mode,new TGLayoutHints(kLHintsExpandX,1,1,1,1));
             //--Time Configutation--
         TGGroupFrame *fGF_time = new TGGroupFrame(fFScidataPanel,"Time Info",kVerticalFrame);
@@ -2644,18 +2644,34 @@ void GuiFrame::OnSciDecode()
     outputDirName.ReplaceAll(outputBaseName,"");
     //---convert----
     ShowText("Start Decoding:");
+    
     FILE* fp=fopen(Form("%s/decode.log",outputDirName.Data()),"w");
-    if(fCBN_usetimecode->IsOn()){
-        ShowText("Use Timecode Info");
-        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
-                        outputDirName.Data(),outputBaseName.Data(),starttime.Data(),stoptime.Data());
-    }
-    else{
-        ShowText("No Timecode Info Used");
-        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
-                        outputDirName.Data(),outputBaseName.Data(),0,0);
-    }
+    
+    convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+                        outputDirName.Data(),outputBaseName.Data());
+    //convert_event(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+    
     fclose(fp);
+    /*
+    switch (rawdata_type) {
+    case kNormal:
+        //convert_event(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+                        outputDirName.Data(),outputBaseName.Data());
+        break;
+    case kCompressed:
+        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+                        outputDirName.Data(),outputBaseName.Data());
+        //ShowText("kCompressed");
+        break;
+    case kSmaller:
+        convert_psd_scidata(fp,rawdata_type,inputDirName.Data(),inputBaseName.Data(),
+                        outputDirName.Data(),outputBaseName.Data());
+        break;
+    default:
+        break;
+    }
+*/
     ShowText("Decode End.");
     //ShowText(inputDirName.Data());
     //ShowText(inputBaseName.Data());
