@@ -2616,12 +2616,12 @@ void GuiFrame::OnSciAnalyze()
         draw_mip(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),outputBaseName.Data());
         draw_mapping(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data());
         fit_dy58(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"dy58");
-        draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
-        extract_psd(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"analysis.root");
-        tempstr=outputDirName+"analysis.root";
-        draw_hitnum(tempstr.Data(),"hit",5);
-        bt_draw_meangeo(tempstr.Data());
-        bt_efficiency(tempstr.Data(),25,25,5);
+        //draw_pedVStime(inputDirName.Data(),inputBaseName.Data(),outputDirName.Data(),outputBaseName.Data());
+        //extract_psd(input_sci_filename.Data(),newped_filename.Data(),outputDirName.Data(),"analysis.root");
+        //tempstr=outputDirName+"analysis.root";
+        //draw_hitnum(tempstr.Data(),"hit",5);
+        //bt_draw_meangeo(tempstr.Data());
+        //bt_efficiency(tempstr.Data(),25,25,5);
         break;
     default:
         break;
