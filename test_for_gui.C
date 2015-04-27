@@ -2409,7 +2409,7 @@ int draw_rel(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,c
     Float_t mean,sigma,mean_ref,sigma_ref,ratio_mean,ratio_sigma,delta_mean,delta_sigma;
     Float_t mean_max,sigma_max,mean_min,sigma_min,tmp_mean_max,tmp_mean_min,tmp_sigma_max,tmp_sigma_min;
     Int_t channel;
-    Char_t channel_label[10];
+    //Char_t channel_label[10];
 
     TFile *file_in=new TFile(Form("%s",testfile));
     TFile *file_ref=new TFile(Form("%s",reffile));
@@ -2433,7 +2433,7 @@ int draw_rel(const Char_t* testfile,const Char_t* reffile,const Char_t* outdir,c
         tmp_mean_min=0.98;tmp_sigma_min=0.95;
 
         tree_test=(TTree*)file_in->Get(Form("%s_ped",label[fee_id].Data()));
-        tree_test->SetBranchAddress("label",channel_label);
+        //tree_test->SetBranchAddress("label",channel_label);
         tree_test->SetBranchAddress("channel",&channel);
         tree_test->SetBranchAddress("mean",&mean);
         tree_test->SetBranchAddress("sigma",&sigma);
