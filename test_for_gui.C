@@ -1604,6 +1604,7 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
     unsigned int event_num=0;
     packet_num=0;
     unsigned int init_packet_num=0;
+    ULong64_t total_eventlength=0;
     bool init_packet_flag=false;
     UInt_t start_timecode,stop_timecode;
     if(start_date && stop_date){
@@ -1680,6 +1681,7 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
                         total_event_num++;
                         if(type_id == datatype){
                             event_num++;
+			    total_eventlength+=(packet_length-header_length);
                             for(int i=0;i<90;i++){
                                 hxpos[i]->Fill(Xpos[i]);
                                 hypos[i]->Fill(Ypos[i]);
@@ -1750,7 +1752,8 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
     fprintf(fp,"\t%d of them are not processed\n",unprocessed_num);
     fprintf(fp,"\tTotally,%d events has been converted successfully which begins at packet_%d.\n",total_event_num,init_packet_num);
     fprintf(fp,"\t%d of them are 0x%x events\n",event_num,datatype);
-
+    fprintf(fp,"\tCompression Ratio: %.4f\n",1.0-total_eventlength/(190*4*event_num));
+    
     in.close();
     f->Write(0,TObject::kOverwrite);//overwrite AutoSave keys
     f->Close();
