@@ -1752,7 +1752,8 @@ int convert_psd_scidata(FILE* fp,const int datatype,const Char_t* parentDir,cons
     fprintf(fp,"\t%d of them are not processed\n",unprocessed_num);
     fprintf(fp,"\tTotally,%d events has been converted successfully which begins at packet_%d.\n",total_event_num,init_packet_num);
     fprintf(fp,"\t%d of them are 0x%x events\n",event_num,datatype);
-    fprintf(fp,"\tCompression Ratio: %.4f\n",1.0-total_eventlength/(190*4*event_num));
+    fprintf(fp,"\ttotal event length: %d\n",total_eventlength);
+    fprintf(fp,"\tCompression Ratio: %.4f\n",1.0-total_eventlength/(190.0*4.0*event_num));
     
     in.close();
     f->Write(0,TObject::kOverwrite);//overwrite AutoSave keys
